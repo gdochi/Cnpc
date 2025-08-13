@@ -1,0 +1,76 @@
+// ========== Configuration ==========
+var minePass = false;                         // Whether entities can pass through the mine
+var mineAoE = true;                          // true: Area damage, false: Single target
+var mineTarg = 1;                            // Target entity type (1:player 2:npc 3:mob 4: animal 5:living)
+ 
+var mineSpec = {                             // Mine spec
+    damage: 4,                               // Damage 
+    knock: 0.8,                              // Knock-up power (vertical motion)
+    radius: 3,                               // Effect radius (for AoE)
+    cooldown: 100                            // Cooldown duration (in ticks)
+};
+ 
+var mineStyle = 2;                           // 0: Cooldown only, 1: Cooldown + model change, 2: Remove block
+var mineModel = "minecraft:polished_blackstone_pressure_plate";           // Visual model of the mine block
+ 
+var minePcle = [                             // Particle effects
+    "explosion",     // Main particle
+    "cloud"          // Sub particle
+];
+ 
+var mineSound = [                            // Sound effects
+    "minecraft:entity.generic.explode"       // Sound played on detonation
+];
+ 
+// ========== Initialization ==========
+function init(e) {
+    var b = e.block;
+    b.setModel(mineModel);                   // Set visible model
+    b.setIsPassible(minePass)                // Set pass-through state
+    if (b.timers.has(1))b.timers.stop(1);            
+}
+ 
+// ========== On Collision ==========
+function collide(e) {
+    var b = e.block;
+    var targ = e.entity;
+    var w = targ.getWorld();
+    var pos = b.getPos();
+ 
+    if (b.timers.has(1)) return;            // Skip if in cooldown
+    if (mineTarg == 5 && !targ.isAlive()) return;
+    if (mineTarg !== 5 && targ.getType() !== mineTarg) return; // Only affect specified target type
+ 
+    // Apply damage and knock-up
+    if (mineAoE === true) {
+    var ents = w.getNearbyEntities(pos, mineSpec.radius, mineTarg); 
+    for (var i = 0; i < ents.length; i++) {
+    ents[i].damage(mineSpec.damage);
+    ents[i].setMotionY(mineSpec.knock)}} 
+    else {
+    targ.damage(mineSpec.damage);
+    targ.setMotionY(mineSpec.knock)}
+ 
+    // Visual & sound effects
+    w.spawnParticle(minePcle[0], pos.x, pos.y + 1, pos.z, 0, 0, 0, 0, 2);
+    w.spawnParticle(minePcle[1], pos.x, pos.y + 1, pos.z, 0.5, 0.5, 0.5, 0, 30);
+    w.playSoundAt(pos, mineSound[0], 1, 1.2);
+ 
+    // Handle post-trigger behavior
+    if (mineStyle === 2) {
+    b.setBlock("minecraft:air")} // Completely remove the block
+ 
+    else if (mineStyle === 1) {
+    b.setModel("minecraft:barrier");         // Change model to air (invisible/inactive)
+    b.timers.start(1, mineSpec.cooldown, false)} // Start cooldown timer
+ 
+    else if (mineStyle === 0) {
+    b.timers.start(1, mineSpec.cooldown, false)} // Start cooldown timer
+}
+ 
+// ========== Cooldown ==========
+function timer(e) {
+    var b = e.block;
+    if (e.id === 1) b.setModel(mineModel) // Restore model
+ 
+}
