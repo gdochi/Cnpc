@@ -1,0 +1,229 @@
+// === CONFIG ===
+var CFG = {
+    spawnPos: { x: 320.5, y: -58.5, z: 1463.5 },   // clone spawn position
+    tab: 1,                                        // clone tab
+    cloneName: "RandomPokemon",                    // clone name
+    YAW: 180,                                      // clone rotation
+    count: 5,                                      // roulette loops
+    interval: 20,                                  // model change interval
+    despawnDelay: 60,                              // despawn delay after finish
+    cost: 100,                                     // exchange cost
+
+    list: [  // Pokemon list (eng = model code, loc = localized name)
+        { eng: "pikachu",     loc: "Pikachu" },
+        { eng: "charizard",   loc: "Charizard" },
+        { eng: "lucario",     loc: "Lucario" },
+        { eng: "aipom",       loc: "Aipom" },
+        { eng: "alakazam",    loc: "Alakazam" },
+        { eng: "alcremie",    loc: "Alcremie" },
+        { eng: "alomomola",   loc: "Alomomola" },
+        { eng: "altaria",     loc: "Altaria" },
+        { eng: "amaura",      loc: "Amaura" }
+    ],
+
+    // sound effects
+    SFX_OPEN: "minecraft:block.enchantment_table.use",
+    SFX_CHANGE: "minecraft:block.note_block.bit",
+    SFX_WIN: "cobblemon:evolution.ui",
+
+    // particles
+    particle1: "happy_villager",
+    particle2: "crit",
+    particle3: "cloud"
+};
+
+/////////////////////////////////////////////////////////////////////////////////////////
+
+var API = Java.type("noppes.npcs.api.NpcAPI").Instance();
+
+var TID_INIT = 50;
+var TID = 100;
+var TID_DESPAWN = 200;
+var doctor;
+
+function init(e){
+    var n = e.npc;
+    var w = n.getWorld();
+    var x = CFG.spawnPos.x, y = CFG.spawnPos.y, z = CFG.spawnPos.z;
+    var ents = w.getNearbyEntities(x, y, z, 3, 2);
+    // remove any leftover clones
+    for (var i = 0; i < ents.length; i++){
+    var et = ents[i];
+    if (et.display.getName() == CFG.cloneName){et.despawn();}}
+}
+
+function interact(e){
+    var n = e.npc;var td = n.getTempdata();var p = e.player;
+
+    if (td.get("busy")){p.message("§cExchange already in progress!");return;}
+    doctor = n;
+    p.playSound(CFG.SFX_OPEN, 2, 0.1);
+    openExchangeGUI(n, p);
+}
+
+function openExchangeGUI(n, p){
+    var baseX = 0, baseY = 0, gapY = 20;
+    var texture = "minecraft:textures/particle/ominous_spawning.png";
+    var gui = API.createCustomGui(501, 100, 100, false, p);
+    var money = getCobbleDollar(p);
+    var ok = (money >= CFG.cost);
+    var color = ok ? "§a" : "§c";
+    var btnText = ok ? "§f[PAY]" : "§c[INSUFFICIENT]";
+
+    gui.addLabel(1, "§fHehehe... Give me money and get an amazing Pokemon!", baseX, baseY, 200, 20);
+    gui.addLabel(2, color + "Balance: " + formatComma(money), baseX, baseY + gapY, 200, 20);
+    gui.addLabel(3, color + "Cost: " + formatComma(CFG.cost), baseX, baseY + gapY*2, 200, 20);
+    gui.addEntityDisplay(5, baseX - 50, baseY + 80, n).setScale(1.5);
+
+    var btn = gui.addTexturedButton(6, btnText, baseX, baseY + gapY*2 + 20, 40, 20, texture);
+    if (!ok) btn.setEnabled(false);
+
+    p.showCustomGui(gui);
+}
+
+function customGuiButton(e){
+    var p = e.player;
+    var id = e.buttonId;
+
+    if(id == 6){
+        API.executeCommand(p.getWorld(),"cobbledollars remove " + p.getName() + " " + CFG.cost);
+        p.closeGui();
+        startRoulette(doctor, p);
+    }
+}
+
+function getCobbleDollar(p){
+    var raw = API.executeCommand(p.getWorld(), "cobbledollars query " + p.getName());
+    if (!raw) return 0;
+
+    var parts = raw.trim().split(/\s+/);
+    var token = parts[parts.length - 1];
+
+    token = token.replace(/[\$,]/g, "");
+
+    // K/M/B parsing
+    var m = token.match(/^(-?\d+(?:\.\d+)?)([KMBkmb])?$/);
+    if (m){
+        var num  = parseFloat(m[1]);
+        var suf  = (m[2] || "").toUpperCase();
+        var mult = (suf == "K") ? 1e3 : (suf == "M") ? 1e6 : (suf == "B") ? 1e9 : 1;
+        return Math.floor(num * mult);
+    }
+
+    var plain = parseInt(token.replace(/[^\d\-]/g, ""));
+    return isNaN(plain) ? 0 : plain;
+}
+
+function formatComma(num){return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");}
+
+function startRoulette(n, p){
+    var w = n.getWorld();
+    var td = n.getTempdata();
+
+    var x = CFG.spawnPos.x, y = CFG.spawnPos.y, z = CFG.spawnPos.z;
+
+    var clone = w.spawnClone(x, y, z, CFG.tab, CFG.cloneName);
+    n.executeCommand("/tp " +clone.getUUID()+ " " +x+ " " +y+ " " +z+ " facing entity " +p.getName()+ " eyes");
+    clone.setRotation(CFG.YAW);
+
+    td.put("clone", clone);
+    td.put("player", p);
+    td.put("used", []);
+    td.put("busy", true);
+
+    n.timers.forceStart(TID_INIT, 30, false);
+}
+
+function timer(e){
+    var n = e.npc;
+    var td = n.getTempdata();
+    var w = n.getWorld();
+    var p = td.get("player");
+
+    if (e.id == TID_INIT){
+        td.put("loop_i", 0);
+        n.timers.forceStart(TID, CFG.interval, false);
+        return;
+    }
+
+    if (e.id == TID){
+        var clone = td.get("clone");
+        if (!clone) return;
+
+        var i = td.get("loop_i");
+        var used = td.get("used");
+
+        if(i >= CFG.count){
+            var data = clone.getEntityNbt();
+            var root = data.getCompound("NpcModelData");
+            var extra = root.getCompound("ExtraData");
+
+            var finalFull = extra.getString("CobblemonModel");
+            var pure = finalFull.split(":")[1];
+
+            var locName = pure;
+            for (var j=0; j<CFG.list.length; j++){
+                if (CFG.list[j].eng === pure){
+                    locName = CFG.list[j].loc;
+                    break;
+                }
+            }
+
+            API.executeCommand(w, "givepokemonother " + p.getName() + " " + pure);
+
+            var msg = 'title "' + p.getName() + '" actionbar {"text":"§eObtained! §f' + locName + '","color":"yellow"}';
+            API.executeCommand(w, msg);
+
+            p.playSound(CFG.SFX_WIN, 1.0, 1.0);
+            w.spawnParticle(CFG.particle2, clone.x,clone.y+0.5,clone.z,0.5,0.5,0.5,0.1,20);
+
+            n.timers.forceStart(TID_DESPAWN, CFG.despawnDelay, false);
+            return;
+        }
+
+        var available = [];
+        for (var k=0; k<CFG.list.length; k++){
+            var pk = CFG.list[k];
+            if (used.indexOf(pk.eng) == -1){
+                available.push(pk);
+            }
+        }
+        if (available.length == 0){
+            available = CFG.list.slice();
+        }
+
+        var idx = Math.floor(Math.random() * available.length);
+        var chosen = available[idx];
+
+        used.push(chosen.eng);
+        td.put("used", used);
+
+        p.playSound(CFG.SFX_CHANGE, 1.0, 1.0);
+        w.spawnParticle(CFG.particle1, clone.x,clone.y+0.5,clone.z,0.5,0.5,0.5,0.1,20);
+
+        var fullId = "cobblemon:" + chosen.eng;
+        var data2 = clone.getEntityNbt();
+        var root2 = data2.getCompound("NpcModelData");
+        var extra2 = root2.getCompound("ExtraData");
+
+        extra2.putString("CobblemonModel", fullId);
+        clone.setEntityNbt(data2);
+        clone.updateClient();
+
+        td.put("loop_i", i + 1);
+        n.timers.forceStart(TID, CFG.interval, false);
+    }
+
+    if (e.id == TID_DESPAWN){
+        var c2 = td.get("clone");
+        if (!c2) return;
+
+        for (var m=0; m<30; m++){
+            w.spawnParticle(CFG.particle3, c2.x, c2.y+0.5, c2.z, 0, 0.05, 0, 0.1, 1);
+        }
+
+        c2.despawn();
+        td.remove("clone");
+        td.remove("busy");
+    }
+}
