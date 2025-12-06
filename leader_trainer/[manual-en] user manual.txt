@@ -1,0 +1,225 @@
+========================================
+Gym Leader Script Manual
+CustomNPCs 1.21.1 + RCT API + TBCS
+========================================
+
+Script Overview
+- First Battle
+- Rematch (Round-based)
+- Condition checks (items, tags, advancements, storeddata, faction points)
+- Reward distribution (items, XP, advancements, faction points, Pokémon)
+- Gimmick execution (command, function)
+- Automatic Trainer JSON attach/detach
+- Real-time loading of external trainer JSON specifications
+
+※ Required Mod  
+Cobblemon Trainer Battle Commands (TBCS)  
+https://www.curseforge.com/minecraft/mc-mods/tbcs
+
+----------------------------------------
+1) FE – Trainer Registration Settings
+----------------------------------------
+apiId        : Trainer API ID (default: tbcs)  
+               Do not modify unless your TBCS app ID changes.
+externalDir  : Folder path for external trainer JSON files (customizable)
+debug        : Debug message toggle (use for testing)
+storeKey     : Storeddata key used to save the trainerId (not recommended to change)
+
+----------------------------------------
+2) CFG – Leader Configuration Structure
+----------------------------------------
+
+[ state ]
+returnsHome  : true/false – Whether the NPC returns to its home position
+walkSpeed    : Movement speed
+moveType     : 0~2 – Standing behavior  
+                0 = static,  
+                1 = can walk,  
+                2 = fixed facing
+maxHealth    : Leader's max health
+
+[ sound.start ]
+name, vol, pitch – Sound to play right before battle begins
+
+[ battle ]
+type          : 1(single), 2(double), 3(multi)
+maxItemUses   : Max number of items the leader may use
+ball          : Ball item held in the NPC’s main hand
+
+----------------------------------------
+3) FIRST BATTLE (CFG.firstbattle)
+----------------------------------------
+spec        : Trainer JSON file name / filename.json
+message     : Message displayed before the battle begins
+delay       : Delay before the battle starts
+maxItemUses : Max number of items the leader may use during battle
+
+conditions  : Requirements to begin the battle
+ - type "item"        → Requires specific items
+ - type "stored"      → Compares storeddata values
+ - type "advancement" → Requires specific advancements
+ - type "tag"         → Requires player tags
+ - type "faction"     → Requires certain faction points
+
+fail.msg    : Message displayed if conditions are not met
+
+reward      : Victory rewards  
+ - item, xp, pokemon, advancement, faction, tag
+
+gimmick     : Effects executed after winning  
+ - type "command"  
+ - type "function" (executes the script’s function() block)  
+If you are familiar with scripting, you can create advanced gimmicks using function().
+
+----------------------------------------
+4) REMATCH (CFG.rematch)
+----------------------------------------
+enabled : true/false – Enables the rematch system  
+rounds  : Array of rematch stages
+
+Each round has the same structure as FIRST BATTLE:
+
+spec        : Trainer JSON file name / filename.json
+message     : Message displayed before the battle
+delay       : Delay before battle begins
+maxItemUses : Max number of items the leader may use
+
+conditions  : Requirements to start this rematch  
+ - item / stored / advancement / tag / faction
+
+fail.msg    : Message displayed when conditions are not met
+
+reward      : Victory rewards  
+ - item, xp, pokemon, advancement, faction, tag
+
+gimmick     : Effects executed after winning  
+ - command / function
+
+Player progress is saved inside storeddata["leaderData"]:
+{
+  NPC_UUID: { firstClear, rematchIdx, ts }
+}
+
+----------------------------------------
+5) Battle Positioning (CFG.pos)
+----------------------------------------
+enable      : true/false  
+tpTrainer   : Teleport location for the leader  
+tpPlayer    : Teleport location for the player  
+
+When enabled, the interact → timer process handles teleportation automatically.
+
+----------------------------------------
+6) Trainer JSON Processing Flow
+----------------------------------------
+During interact:
+ - Validate battle conditions
+ - Display pre-battle GUI
+ - Start battle-delay timer
+
+During timer:
+ - Adjust NPC/player positions
+ - Use faceEach to orient NPC/player toward each other
+ - Copy external trainer JSON into a temporary runtime file (applyTrainerRuntime)
+ - Assign trainerId and attach trainer
+ - Play battle-start sound
+ - Run /tbcs battle
+
+When battle ends (trigger id = 1):
+ - Grant rewards
+ - Execute gimmicks
+ - Update storeddata
+ - Increase rematchIdx
+ - Reset NPC state
+
+----------------------------------------
+7) Condition Check Functions
+----------------------------------------
+allConds() → Checks whether all conditions are met  
+okCond()   → Validates item, stored, advancement, tag, faction conditions
+
+----------------------------------------
+8) Reward & Gimmick Functions
+----------------------------------------
+giveRewards() → Gives item, XP, Pokémon, faction points, advancements, tags  
+runGimmick()  → Executes commands or function() logic
+
+----------------------------------------
+9) Player Record Structure
+----------------------------------------
+leaderData = {
+  NPC_UUID: {
+    firstClear: true/false,
+    rematchIdx: number,
+    ts: "YYYY-MM-DD HH:MM:SS"
+  }
+}
+
+----------------------------------------
+10) Overall Usage Flow
+----------------------------------------
+1. Player interacts with the NPC  
+2. Script determines First Battle or Rematch  
+3. Condition check  
+4. Pre-battle GUI displayed  
+5. Timer delay → battle starts (tbcs battle)  
+6. Rewards and gimmicks applied upon victory  
+7. Rematch progress updated  
+
+----------------------------------------
+11) External JSON System Overview
+----------------------------------------
+- Reads spec.json and generates a temporary runtime file  
+- Registers trainerId and attaches it to the NPC  
+- Detaches trainer automatically after battle  
+- Removes temporary file  
+- Trainer specs can be updated without restarting the server  
+
+----------------------------------------
+12) Admin LeaderData Management Tool
+----------------------------------------
+This package includes an administrator-only utility for viewing or removing
+players’ Gym Leader progress data (leaderData).
+
+To use this tool, attach the script check_data.js to a Player Script.
+
+▶ Admin-only chat command  
+    "!leader"  
+   - Regular players cannot use this command  
+   - Only players listed in the ADMINS array can access it  
+     (e.g., ["Great_dochi", "jerry"])
+
+▶ Features  
+1. Displays a list of all players  
+2. Shows whether each player has leaderData  
+   - HAS  = data exists  
+   - NONE = no data  
+3. Allows deleting a player’s leaderData with a button  
+4. Plays feedback sounds upon deletion  
+   - Success: XP pickup sound  
+   - Failure: Anvil sound  
+5. GUI automatically refreshes  
+6. A future “Admin Control GUI” will be added and integrated later.
+
+----------------------------------------
+13) Troubleshooting
+----------------------------------------
+▶ JSON not loading  
+  - Check externalDir path  
+  - Ensure the spec name matches the actual JSON filename  
+
+▶ Battle not starting  
+  - Check conditions and fail messages  
+  - Verify tbcs battle command syntax  
+
+▶ Rematch not working  
+  - Check storeddata leaderData  
+  - Verify rematch.enabled and number of rounds  
+
+▶ Additional support  
+Cobblemon Discord (cobblemon cnpc script Support)  
+https://discord.com/channels/934267676354834442/1442841905548361862
+
+----------------------------------------
+End.
+========================================
