@@ -1,0 +1,211 @@
+
+=============================================
+ Pokémon Trade NPC — Complete Configuration Manual
+=============================================
+
+This manual explains every configuration option and system included in the
+Pokemon Trade NPC script. All features are fully updated, including:
+- Species requirement
+- Faction requirement
+- Item requirement
+- Time‑of‑day restriction
+- NPC trade limits
+- Real‑time reset system
+- Remaining‑time calculation
+- GUI behavior
+- Execution flow
+
+--------------------------------------------------------------------
+ 1. GENERAL STRUCTURE
+--------------------------------------------------------------------
+The script allows a player to trade a specific Pokémon from their party
+in exchange for another Pokémon, while optional conditions such as
+reputation, items, and world time may restrict access.
+
+The behavior is fully configurable through the CFG object.
+
+--------------------------------------------------------------------
+ 2. CONFIGURATION (CFG)
+--------------------------------------------------------------------
+
+CFG.species
+------------
+Defines which Pokémon the player must have and which Pokémon the NPC gives.
+
+    species: {
+        want: "Gengar",
+        give: "Onix",
+        message: "§cYou don't have {want}."
+    }
+
+- want  → Pokémon the player must possess in their party.
+- give  → Pokémon rewarded to the player.
+- message → Message when the player has no valid Pokémon.
+
+CFG.faction
+------------
+Optional reputation requirement.
+
+    faction: {
+        enabled: true,
+        name: 3,
+        min: 500,
+        message: "§cYour reputation with {faction} is too low."
+    }
+
+- enabled → Enable/disable faction check.
+- name → Faction ID.
+- min → Minimum reputation required.
+- message → Message when requirement fails.
+
+CFG.item
+---------
+Optional item requirement.
+
+    item: {
+        enabled: true,
+        id: "minecraft:emerald",
+        count: 8,
+        message: "§cYou need {item}."
+    }
+
+- enabled → Enable/disable item requirement.
+- id → Item ID.
+- count → Required amount.
+- message → Failure message.
+
+CFG.time
+---------
+Optional time‑of‑day restriction (based on Minecraft world time).
+
+    time: {
+        enabled: true,
+        allowedTime: 1,
+        message: "§eI only trade during {time}."
+    }
+
+Time codes:
+    0 = any time
+    1 = morning   (0–5999)
+    2 = noon      (6000–11999)
+    3 = evening   (12000–17999)
+    4 = night     (18000–23999)
+
+CFG.limits.npc
+----------------
+Controls how many total trades an NPC can perform before becoming unavailable.
+
+    limits: {
+      npc: {
+        enabled: true,
+        key: "trade_global",
+        max: 2,
+        onExceed: 0,
+        message: "§cNo more trades available.",
+
+        reset: {
+            enabled: true,
+            zone: "Asia/Seoul",
+            every: 5,
+            unit: "seconds",
+            keyDate: "trade_global_dt"
+        }
+      }
+    }
+
+- enabled → Enables NPC-wide trade limit.
+- key → Stored data key holding the current trade count.
+- max → Maximum trades allowed.
+- onExceed:
+    0 → Block only.
+    1 → NPC despawns after reaching max.
+- message → Message shown when trade is blocked.
+
+CFG.limits.npc.reset
+---------------------
+Real‑time reset system.
+
+- enabled → Enable or disable reset system.
+- zone → Time zone for real‑world time.
+- every → Reset interval amount.
+- unit → "seconds", "minutes", "hours", "days"
+- keyDate → Stored data field containing the timestamp of the last limit trigger.
+
+When max trades are reached:
+    - The script stores the exact timestamp.
+    - The NPC remains locked until the remaining time reaches zero.
+    - When remaining time = 0, the limit resets automatically.
+
+--------------------------------------------------------------------
+ 3. REMAINING TIME SYSTEM
+--------------------------------------------------------------------
+Remaining time is calculated using:
+
+getRemain(zoneStr, lastStr, every, unit)
+
+Returns:
+
+    {
+      days: 0,
+      hours: 0,
+      minutes: 0,
+      seconds: 0
+    }
+
+When all fields are zero, the script immediately resets the NPC’s trade count.
+
+--------------------------------------------------------------------
+ 4. TRADE COUNT HANDLING
+--------------------------------------------------------------------
+When a successful trade occurs:
+
+    addNpcTradeCount(n);
+
+This:
+- Increments the NPC’s trade counter.
+- If count reaches max, saves the current timestamp.
+- If onExceed is 1, despawns NPC.
+
+--------------------------------------------------------------------
+ 5. TRADE ELIGIBILITY FLOW
+--------------------------------------------------------------------
+When the player interacts with the NPC:
+
+1) NPC trade count is checked first.
+    - If limit exceeded:
+        - If reset.enabled = true:
+            - Remaining time is calculated.
+            - If 0 → reset and continue.
+            - If > 0 → display time & block.
+        - If reset.enabled = false:
+            - Only display block message.
+
+2) Pokémon requirement checked.
+3) Faction requirement checked.
+4) Item requirement checked.
+5) Time‑of‑day requirement checked.
+6) If all pass → GUI opens.
+
+--------------------------------------------------------------------
+ 6. GUI BEHAVIOR
+--------------------------------------------------------------------
+- Shows NPC model.
+- Lists all party slots containing the desired Pokémon.
+- When a slot is selected, a confirm button appears.
+- On confirm:
+    - Player's Pokémon is removed.
+    - Reward Pokémon is granted.
+    - Trade count increases.
+
+--------------------------------------------------------------------
+ 7. RESET BEHAVIOR SUMMARY
+--------------------------------------------------------------------
+- Limit reached → timestamp stored.
+- Next interaction:
+    - If real‑time not passed → show remaining time.
+    - If fully passed → reset count automatically.
+- Reset always uses real-world time (ZoneId).
+
+--------------------------------------------------------------------
+END OF MANUAL
+--------------------------------------------------------------------
