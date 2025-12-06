@@ -343,7 +343,7 @@ function timer(e){
   n.ai.setStandingType(2);
   n.setMainhandItem(n.getWorld().createItem(CFG.battle.ball,1));
 
-  if(CFG.pos.enable){
+  if(CFG.pos.enable===true){
     var t=CFG.pos.tpTrainer, pl=CFG.pos.tpPlayer;
     n.setPosition(t[0],t[1],t[2]);
     p.setPosition(pl[0],pl[1],pl[2]);
@@ -402,3 +402,4 @@ function trigger(e){
   n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
   n.updateClient();
 }
+
