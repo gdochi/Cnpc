@@ -166,7 +166,7 @@ function giveRewards(n,p,list){
     else if(r.type=="pokemon") n.executeCommand('pokegiveother "'+p.getName()+'" '+r.species);
     else if(r.type=="faction") p.addFactionPoints(r.id, r.score||0);
     else if(r.type=="command"){
-      var cmd=r.cmd.replace("@player",p.getName()).replace("@leader",n.getName());
+      var cmd=r.cmd.replace("@player",p.getName()).replace("@leader",n.getUUID());
       n.executeCommand(cmd);
     }
     else if(r.type=="advancement") n.executeCommand("advancement grant "+p.getName()+" only "+r.id)
@@ -402,4 +402,5 @@ function trigger(e){
   n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
   n.updateClient();
 }
+
 
