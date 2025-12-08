@@ -172,6 +172,7 @@ function giveRewards(n,p,list){
     else if(r.type=="advancement") n.executeCommand("advancement grant "+p.getName()+" only "+r.id)
     else if(r.type=="tag") p.addTag(r.tag);
   }
+p.updatePlayerInventory()
 }
 function runGimmick(n,p,list){
   if(!list) return;
@@ -402,5 +403,6 @@ function trigger(e){
   n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
   n.updateClient();
 }
+
 
 
