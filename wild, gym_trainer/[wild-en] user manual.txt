@@ -1,0 +1,219 @@
+
+========================================
+     [Wild] Trainer Script Manual
+========================================
+
+※ Required Mod  
+Cobblemon Trainer Battle Commands (TBCS)  
+https://www.curseforge.com/minecraft/mc-mods/tbcs
+
+----------------------------------------
+1. Base state Settings
+----------------------------------------
+These settings define how the NPC behaves when idle.
+
+- returnsHome: Determines whether the NPC returns to its home location when not engaged.  
+- walkSpeed: Sets the NPC’s default walking speed.  
+- moveType:  
+  0 = stationary  
+  1 = wandering  
+  2 = fixed facing direction  
+- maxHealth: Sets maximum NPC health.
+
+----------------------------------------
+2. time Settings
+----------------------------------------
+The time configuration defines the time zone used for logging battles, computing cooldowns,
+and storing timestamps for rematch availability.
+
+All first-battle and revenge-cycle history for each player uses this time zone.  
+Default: "Asia/Seoul".
+
+----------------------------------------
+3. displayArea Settings
+----------------------------------------
+- displayArea: The name of the area or region where this Wild Trainer exists.  
+- This label appears in the player’s contact list GUI, displayed along with the trainer’s coordinates.  
+  Example: Persimmon City (215 20 507)  
+- Useful when placing many Wild Trainers in different biomes or cities.
+
+----------------------------------------
+4. ball Settings
+----------------------------------------
+Determines the Poké Ball displayed in the NPC’s main hand at battle start.  
+Example: "cobblemon:poke_ball"
+
+This functions identically to Gym Trainer visuals.
+
+----------------------------------------
+5. detect Settings
+----------------------------------------
+Controls how the NPC detects players and initiates the first battle sequence.
+
+5-1. type  
+- 1: Interaction-based detection  
+- 2: Fixed-direction detection (line-of-sight)  
+- 3: Circular radius detection  
+
+5-2. interval  
+Detection frequency in ticks (20 ticks = 1 second).
+
+5-3. fixed  
+Used only when type = 2:  
+- angle: NPC’s facing angle  
+- range: detection distance  
+- width: detection width  
+Allows behaviors such as “trainer challenges players approaching directly from the front.”
+
+5-4. round  
+Sets the radius for circular detection.
+
+----------------------------------------
+6. start Settings
+----------------------------------------
+How the battle begins once the player is detected.
+
+6-1. type  
+- 1: Immediate battle start  
+- 2: GUI message → automatic start after delay  
+- 3: GUI with Yes/No choice  
+
+6-2. delay  
+Applies only when type = 2. Time before the battle starts.
+
+6-3. denyMs  
+Cooldown after the player rejects the initial challenge.  
+Prevents spam and allows time to leave safely.
+
+----------------------------------------
+7. first (First Battle Package)
+----------------------------------------
+The configuration used for the first encounter with a Wild Trainer.
+
+7-1. battle  
+- type: TBCS battle format (Single/Double/Multi)  
+- spec: Trainer JSON file name  
+- maxItemUses: Maximum number of item uses allowed  
+
+7-2. message  
+The pre-battle GUI message displayed to the player.
+
+7-3. conditions  
+Requirements needed to start the battle, inherited from Gym Trainer rules:  
+- Item-based requirements  
+- Stored data checks  
+- Advancement checks  
+- Tag-based conditions  
+- Faction score requirements  
+
+7-4. reward  
+A Wild Trainer supports multiple reward types:
+- Grant XP  
+- Give items  
+- Give Pokémon  
+- Execute commands  
+- Modify faction score  
+- Grant advancements  
+- Apply tags  
+
+7-5. gimmick  
+Optional list of post-battle commands to create additional effects or story moments.
+
+----------------------------------------
+8. revenge (Revenge Battle System)
+----------------------------------------
+The Wild Trainer includes a multi-stage rematch system unique to this script.
+
+8-1. enabled  
+If true, the trainer supports rematches.
+
+8-2. cooldown  
+How long the player must wait before the next rematch is available.
+
+8-3. stages  
+Each stage defines a new rematch configuration.  
+A stage includes:  
+- battle (format, trainer spec, item quota)  
+- message (pre-battle GUI)  
+- conditions (optional; same format as first battle)  
+- reward (stage-specific rewards)  
+- gimmick (post-battle commands)
+
+Stages progress in order:  
+Stage 0 → Stage 1 → ... → Final Stage → No further battles
+
+----------------------------------------
+9. pos (Teleport Settings)
+----------------------------------------
+Optional teleportation for cinematic or structured battle areas.
+
+- enable: If true, applies teleportation.  
+- tpNpc: Teleport coordinates for the NPC.  
+- tpPlayer: Teleport coordinates for the player.
+
+----------------------------------------
+10. after (Phone Exchange System)
+----------------------------------------
+After the first victory, the NPC may propose a phone-number exchange.
+
+- suggest: Whether the exchange prompt is shown.  
+- message: GUI message asking the player to exchange numbers.  
+- notify: Chat message shown when the exchange succeeds.
+
+----------------------------------------
+11. fe Settings (Trainer Specification Loader)
+----------------------------------------
+These settings function exactly like those in the Gym Trainer system.  
+(values inherited from Gym Trainer Manual)
+
+- apiId: Must always be "tbcs".  
+- externalDir: Directory containing trainer JSON spec files.  
+- storeKey: Storeddata key referencing the currently attached trainer ID.  
+Changing apiId or storeKey is not recommended.
+
+----------------------------------------
+12. sound Settings
+----------------------------------------
+Sound effects played during the battle setup.
+
+- pre: Sound played before the battle begins.  
+- start: Sound played at the moment the battle starts.
+
+----------------------------------------
+13. Battle Flow Overview
+----------------------------------------
+1) NPC detects the player → performs dash animation  
+2) GUI appears (message or Yes/No)  
+3) Conditions checked  
+4) Trainer spec loaded  
+5) Optional teleportation  
+6) TBSC battle begins  
+7) Victory/defeat handled  
+8) Rewards + gimmick execution  
+9) Phone exchange or stage progression  
+
+----------------------------------------
+14. Player Record Structure
+----------------------------------------
+Each player maintains independent battle history for every Wild Trainer.
+
+Stored information:
+- uuid: NPC UUID  
+- name: NPC name  
+- area: region name  
+- pos: last known coordinates  
+- lastBattle: timestamp of last battle  
+- nextBattle: when a rematch becomes available  
+- battles: total number of battles fought  
+- stage: current revenge battle stage  
+- firstClear: whether the first battle was cleared  
+
+----------------------------------------
+15. Key Differences from Gym Trainers
+----------------------------------------
+- Multi-stage revenge battle system  
+- Expanded reward formats  
+- Built-in phone exchange feature  
+- Mandatory cooldown-based rematches  
+- Separation of first vs. revenge battle packages  
+
