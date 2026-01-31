@@ -1,0 +1,435 @@
+Trainer NPC GUI User Manual
+
+Overview
+- This GUI allows you to save and load settings for a Trainer NPC.
+- Some settings can be exported to or imported from external JSON files.
+- This GUI is administrator-only.
+- Each category comes with default values that can be freely modified.
+
+--------------------------------------------------
+1. How to Open the GUI
+--------------------------------------------------
+
+1-1. Requirements
+- Only players(user name) listed in AD.LIST are allowed to use this GUI.
+  Example:
+  - Great_dochi
+  - Admin2
+
+- You can choose which item grants access.
+  Example:
+  - minecraft:stick
+  (This is fully configurable.)
+
+1-2. Opening Steps
+1) Look at the Trainer NPC you want to configure.
+2) Hold the configured item (e.g. minecraft:stick) in your main hand.
+3) Right-click the NPC.
+4) The GUI will open.
+
+If the GUI does not open, check:
+- Are you listed in AD.LIST?
+- Are you holding the correct item?
+- Is the target a CustomNPCs NPC (not a block, mob, or player)?
+
+--------------------------------------------------
+2. GUI Layout (Category Buttons)
+--------------------------------------------------
+
+On the left side of the GUI, category buttons are listed vertically:
+
+- BASIC
+- DETECTION
+- BATTLE
+- DETAIL
+- CONDITION
+- REWARD
+- POSITION
+- EXTERNAL
+- SOUND
+
+When you click a category:
+- The corresponding settings page is displayed on the right.
+- A small Poké Ball icon appears next to the selected category.
+
+Saving Rules (Very Important)
+- Typing text alone does NOT save anything.
+- Most fields require clicking the ✓ button on the right to save.
+- true/false toggle buttons save immediately when clicked.
+
+--------------------------------------------------
+3. BASIC Page (Base Stats & Display)
+--------------------------------------------------
+
+The BASIC page controls the NPC’s fundamental behavior and stats.
+
+Fields
+- displayArea : text field + ✓
+- walkSpeed  : integer field + ✓
+- maxHealth  : integer field + ✓
+- returnHome : true/false toggle (instant save)
+- handItem   : text field + ✓
+
+Usage Details
+
+1) displayArea
+- Enter a string representing the trainer’s origin/area.
+- This value is intended to be shown in a future Trainer Management GUI.
+- Click ✓ to save.
+
+2) walkSpeed
+- Controls NPC movement speed.
+- Enter a number (default: 2, minimum: 0).
+- Click ✓ to save.
+
+3) maxHealth
+- Sets the NPC’s maximum health.
+- Enter a number (default: 10, minimum: 1).
+- Click ✓ to save.
+
+4) returnHome
+- Click the button to toggle true / false.
+- Saved instantly.
+  - true  : NPC returns to its home position.
+  - false : Home return disabled.
+
+5) handItem
+- Enter a mod item ID.
+  Example: cobblemon:poke_ball
+- Click ✓ to save.
+
+--------------------------------------------------
+4. DETECTION Page (Encounter & Detection Logic)
+--------------------------------------------------
+
+This page defines how the NPC detects players and initiates battles.
+
+Fields
+- detectType      : integer + ✓
+- detectTick      : integer + ✓ (default: 20, minimum: 1)
+- visionDistance  : decimal + ✓ (default: 8)
+- visionWidth     : decimal + ✓ (default: 1)
+- radiusRange     : decimal + ✓ (default: 6)
+
+Usage
+
+1) detectType
+- 0 : Interaction-based (right-click)
+- 1 : Fixed vision-based detection
+- 2 : Radius-based detection
+- Enter value → ✓
+
+2) detectTick
+- Detection check interval (in ticks).
+- Smaller values = more frequent checks.
+
+3) Fixed Detection
+- visionDistance : detection distance
+- visionWidth    : vision cone width
+
+4) Radius Detection
+- radiusRange : detection radius around the NPC
+
+--------------------------------------------------
+5. BATTLE Page (Battle Start & Rematch Rounds)
+--------------------------------------------------
+
+This page controls how battles start and how many rounds (rematches) exist.
+
+Important:
+- rematchEnable and rematchMax directly affect
+  the number of round buttons shown in DETAIL, CONDITION, and REWARD.
+
+Fields
+- startType      : integer + ✓
+- startDelay     : integer + ✓ (default: 40)
+- denyCooldown   : integer + ✓ (default: 100)
+- rematchEnable  : true/false toggle
+- rematchMax     : integer + ✓ (0–8)
+
+Usage
+
+1) startType
+- 0 : Instant battle start
+- 1 : Delayed start (message / delay style)
+- ✓ to save
+
+2) startDelay
+- Delay before battle starts (ticks).
+- ✓ to save
+
+3) denyCooldown
+- Cooldown after denial or failure (ticks).
+- ✓ to save
+
+4) rematchEnable
+- Toggle true / false.
+- Saved instantly.
+- When enabled, multiple rounds become available.
+
+5) rematchMax
+- Maximum number of rematches.
+- Example:
+  rematchEnable = true
+  rematchMax = 3
+  → Total rounds: 4 (round 0 to 3)
+
+Round Display
+- Rounds appear as [0], [1], [2], ...
+- Selected round is highlighted in green.
+
+--------------------------------------------------
+6. DETAIL Page (Round-Specific Specs & Messages)
+--------------------------------------------------
+
+Each round has its own settings:
+- trainerSpec
+- itemLimit
+- startMessage
+
+6-1. Selecting a Battle Round
+- Click a round button [0] [1] ... at the top.
+- Settings for that round are loaded.
+
+6-2. trainerSpec Setup
+
+Method A: Manual Input
+1) Type the spec name into the trainerSpec field.
+2) Click ✓ to save.
+
+Method B: Select from List (Recommended)
+- The list is generated from JSON files inside:
+  EXTERNAL → Spec Path (folderPath)
+
+Steps
+1) Click a name in the list.
+   - The name is copied into the trainerSpec field.
+   - The selected row is highlighted.
+2) Click ✓ to apply.
+
+List Navigation
+- < : previous page
+- > : next page
+
+6-3. itemLimit
+- Enter the maximum number of usable items during battle.
+- Click ✓ to save.
+
+6-4. startMessage
+- Large text area.
+- Click ✓ to save.
+
+Line Break Rule
+- Use @@ to indicate a line break.
+- @@ will be converted to new lines when displayed.
+
+--------------------------------------------------
+7. CONDITION Page (Round-Based Battle Conditions)
+--------------------------------------------------
+
+This page defines conditions that must be met to start a battle.
+
+Structure
+- Left: Rule slots (up to 8) + AND / OR mode
+- Right: Editor for the selected rule
+
+7-1. Battle Round Selection
+- Choose a round at the top to edit its conditions.
+
+7-2. Condition Mode
+- AND / OR toggle
+- Click to switch, saved instantly.
+
+7-3. Rule Slots
+- Up to 8 slots labeled <empty>.
+- Click a slot to select it.
+- Buttons:
+  + : Add a rule
+  - : Remove selected rule (or last one)
+
+7-4. Rule Editor
+
+Common Controls
+- Type : ◀ / ▶
+- Key  : text input or ◀ / ▶
+- Op   : ◀ / ▶
+- Val  : text or number input (if required)
+- ✓    : Save rule
+
+Rule Types
+- stored
+- item
+- tag
+- faction
+- adv
+
+Type Details
+
+stored
+- Key : storeddata key (text)
+- For advanced users familiar with CustomNPCs scripting
+- Op  : ==, >=, <=
+- Val : required for >= or <=
+
+item
+- Key : item ID
+- Op  : has, not, >=
+- Val : required for >=
+
+tag
+- Key : tag string (use #tagname)
+- Op  : has, not
+
+faction
+- Key : select or enter faction name
+- Op  : ==, >=, <=
+- Val : numeric (if applicable)
+
+adv
+- Key : advancement ID
+- Op  : done, not
+
+--------------------------------------------------
+8. REWARD Page (Round-Based Rewards)
+--------------------------------------------------
+
+Defines rewards granted after a battle.
+
+Structure
+- Left: Reward slots (up to 8) + ALL / RANDOM mode
+- Right: Reward editor
+
+8-1. Battle Round Selection
+- Choose the round at the top.
+
+8-2. Reward Mode
+- ALL    : Give all listed rewards
+- RANDOM : Give one random reward
+- Saved instantly when clicked.
+
+8-3. Reward Slots
+- Up to 8 <empty> slots.
+- Click to edit.
+- + : Add reward
+- - : Remove selected (or last)
+
+8-4. Reward Editor
+
+Reward Types
+- faction
+- command
+- item
+- adv
+
+Type Details
+
+faction
+- Key : faction name
+- Val : integer value
+- ✓ to save
+
+· Uses the CustomNPCs faction system
+· Gives faction points to the player when the reward is applied
+· Positive values increase faction reputation
+· Negative values decrease faction reputation
+
+command
+· Key : command string
+· ✓ to save
+
+· Executes a Minecraft command as the NPC
+· @player is replaced with the player name
+· @npc is replaced with the NPC UUID before execution
+
+item
+· Key : item ID
+· Val : quantity
+· ✓ to save
+
+· Gives the specified item to the player as a reward
+· Item IDs must be written in modid:item_name format
+
+adv
+· Key : advancement ID
+· ✓ to save
+
+· Grants the specified advancement to the player
+
+--------------------------------------------------
+9. POSITION Page (Pre-Battle Position & Dash)
+--------------------------------------------------
+
+Controls player repositioning and dash effects before battle.
+
+Fields
+- useReposition : true/false toggle
+- playerDistance: decimal + ✓ (default: 4)
+- playerHeight  : decimal + ✓ (default: 1.0)
+- dashEnable    : true/false toggle
+- dashPower     : decimal + ✓ (default: 1.2)
+
+--------------------------------------------------
+10. EXTERNAL Page (Import / Export)
+--------------------------------------------------
+
+10-1. Spec Path
+- Folder path containing trainer spec JSON files.
+- Click ✓ to save.
+
+- Used to populate trainerSpec lists.
+- Uses the same trainer JSON structure as the Radical Trainer mod.
+- Trainer spec JSON files are read directly from this folder.
+- Editing a trainer JSON file does not require a manual reload.
+- Changes are applied automatically the next time the spec is referenced.
+
+10-2. Export Path
+- Folder path for exporting NPC configs.
+- Click ✓ to save.
+
+10-3. Export
+- Click Export to save current NPC config as JSON.
+- File name is based on NPC name.
+- Chat message confirms export.
+
+10-4. Import
+- Select a JSON file from the list.
+- Click ✓ to apply.
+- Current NPC config is overwritten.
+
+--------------------------------------------------
+11. SOUND Page (Sound Test & Save)
+--------------------------------------------------
+
+Two sound sets:
+- Pre Sound
+- Start Sound
+
+Each includes:
+- Sound ID
+- Volume
+- Pitch
+
+Buttons
+- ▶ : Test sound
+- ■ : Stop sound
+- ✓ : Save
+
+--------------------------------------------------
+12. Practical Tips
+--------------------------------------------------
+
+- Always click ✓ to save text inputs.
+- Toggles save immediately.
+- Set rematch settings BEFORE configuring round-based pages.
+- If trainerSpec list is empty, check Spec Path.
+- Use Export / Import to create reusable presets.
+
+--------------------------------------------------
+13. When Closing the GUI
+--------------------------------------------------
+
+- Closing the GUI calls reset() on the NPC.
+- Temporary data and timers may be cleared.
+- Actual behavior depends on server-side script integration.
+
+END
