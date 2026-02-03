@@ -7,7 +7,7 @@ var CFG={
   prepDelay:5,
   model:"natures_spirit:joshua_mosaic",
   sound:{
-    call:"minecraft:steam",
+    call:"minecraft:block.note_block.bell",
     start:"minecraft:block.piston.extend",
     stop:"minecraft:block.piston.contract"
   },
@@ -95,4 +95,5 @@ function inBox(e,b,c){
   if(e.z>b.z+c.zPos) return false;
   if(e.z<b.z-c.zNeg) return false;
   return true;
+
 }
