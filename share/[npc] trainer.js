@@ -16,7 +16,6 @@ function interact(e){
   var n=e.npc,p=e.player,td=n.getTempdata();
   CFG=callCFG(n);
   var b=CFG.DETECTION||{};
-  n.say(b.detectType)
   if(parseInt(b.detectType)!==0) return;
   if(doCheck(n,td,p)===false) return;
   td.put("target",p);
