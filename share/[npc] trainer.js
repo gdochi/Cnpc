@@ -43,6 +43,14 @@ function doCheck(n,td,p){
   if(td.get("busy")==="busy") return false;
   if(isDenied(n,p)) return false;
   if(isBattle(p)===false) return false;
+
+  var CFG=callCFG(n);
+  var raw=p.getStoreddata().get("trainerData");
+  var data=raw?JSON.parse(raw):null;
+  var rec=data?data[n.getUUID()]:null;
+  
+  if(rec && rec.firstClear===true){
+  if((CFG.BATTLE||{}).rematchEnable==false){return false;}}
   var r=isCondSat(p,n,false); if(!r.ok) return false;
   return true;
 }
