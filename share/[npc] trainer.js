@@ -15,16 +15,10 @@ function init(e){
 function interact(e){
   var n=e.npc,p=e.player,td=n.getTempdata();
   CFG=callCFG(n);
-  var b=CFG.BATTLE||{};
-  if(parseInt(b.startType,10)!==2) return;
-
-  if(td.get("busy")==="busy") return;
-  if(isDenied(n,p)) return;
-  if(isBattle(p)===false) return;
-
-  var r=isCondSat(p,n,false);
-  if(!r.ok) return;
-
+  var b=CFG.DETECTION||{};
+  n.say(b.detectType)
+  if(parseInt(b.detectType)!==0) return;
+  if(doCheck(n,td,p)===false) return;
   td.put("target",p);
   td.put("busy","busy");
   startFlow(n,p);
@@ -371,5 +365,6 @@ function sayBattleGui(p,n,rIdx){
   g.addColoredLine(13,-1000,by+2,1000,by+2,LINE_MAIN,THICK);
   p.showCustomGui(g);
 }
+
 
 
