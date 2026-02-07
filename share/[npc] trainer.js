@@ -29,8 +29,8 @@ function timer(e){
 }
 function doDetect(n,td){
   var d=CFG.DETECTION||{},type=parseInt(d.detectType,10),p=null;
-  if(type===0) return
-  if(type===1) p=fixT(n,d);
+  if(type==0) return;
+  if(type==1) p=fixT(n,d);
   else if(type===2) p=radT(n,d);
   if(!p) return;
   if(doCheck(n,td,p)===false) return;
@@ -175,9 +175,9 @@ function condRound(p,n,CFG){
 function startFlow(n,p){
   CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
-  var b=CFG.BATTLE||{},mode=parseInt(b.startType,10)||0;
-  if(mode===0){ n.timers.forceStart(TID.AUTO,1,false); return; }
-  if(mode===1){
+  var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
+  if(mode==0){ n.timers.forceStart(TID.AUTO,1,false); return; }
+  if(mode==1){
     doDash(n,p,CFG.POSITION||{});
     sayBattleGui(p,n,rIdx);
     n.timers.forceStart(TID.AUTO,b.startDelay||20,false);
@@ -365,6 +365,5 @@ function sayBattleGui(p,n,rIdx){
   g.addColoredLine(13,-1000,by+2,1000,by+2,LINE_MAIN,THICK);
   p.showCustomGui(g);
 }
-
 
 
