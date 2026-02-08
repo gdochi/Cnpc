@@ -1,0 +1,170 @@
+Dialogue Editor GUI Guide
+=========================
+
+This GUI allows administrators to configure NPC dialogue, visuals, and sounds
+directly in-game without modifying code.
+
+--------------------------------------------------
+Access Requirements
+--------------------------------------------------
+
+- Admin only (must be listed in AD.ADMINS)
+- Required item: minecraft:blaze_rod
+- Right-click an NPC to open the GUI
+
+--------------------------------------------------
+Categories
+--------------------------------------------------
+
+MODE
+TEXT
+NPC
+ASSET
+SOUND
+SIMULATION (PLAY)
+
+--------------------------------------------------
+MODE : Dialogue Render Mode
+--------------------------------------------------
+
+Controls how dialogue is displayed.
+
+Render Types
+- Page Render: Shows a full page instantly
+- Sentence Render: Displays dialogue sentence by sentence
+- Character Render: Typewriter-style character output
+
+Common Settings
+- Prev button X/Y
+- Next button X/Y
+- Page label X/Y
+
+Sentence-only
+- Sentence gap (ticks)
+
+Character-only
+- Characters per step
+- Typing tick interval
+- Sentence gap (ticks)
+
+Preview
+- Instantly simulate current settings
+
+--------------------------------------------------
+TEXT : Dialogue Content & Layout
+--------------------------------------------------
+
+Dialogue Text
+- Supports multiple lines
+- Line breaks define dialogue flow
+
+Layout Settings
+- Lines per page
+- Label X position
+- Label Y position
+- Line gap (pixels)
+
+Preview
+- Shows dialogue immediately with current layout
+
+--------------------------------------------------
+NPC : NPC Rendering
+--------------------------------------------------
+
+NPC Display
+- Render NPC inside dialogue window
+- Toggle on/off
+
+Options
+- Follow cursor
+- Rotation
+- Scale
+- Position X/Y
+
+Preview
+- Real-time NPC render preview
+
+--------------------------------------------------
+ASSET : Background & UI Assets
+--------------------------------------------------
+
+Background Texture
+- Input texture path
+  Example: modid:textures/gui/dialogue_bg.png
+
+Rect Settings
+- x : screen X offset
+- y : screen Y offset
+- w : width
+- h : height
+- tx : texture crop X
+- ty : texture crop Y
+
+Buttons
+- Save
+- Apply (preview only)
+- Reset
+
+Preview
+- Applies asset settings immediately
+
+--------------------------------------------------
+SOUND : Dialogue Sounds
+--------------------------------------------------
+
+Sound Types
+- OPEN : On dialogue start
+- SENTENCE : Per sentence
+- CHAR : Per character
+
+Settings
+- Sound ID
+- Volume
+- Pitch
+
+Functions
+- Test
+- Stop
+- Save
+
+--------------------------------------------------
+SIMULATION / PLAY
+--------------------------------------------------
+
+Play
+- Runs dialogue exactly as in-game
+- Includes animation, paging, and sounds
+
+Stop
+- Stops playback immediately
+
+Page Controls
+- Previous / Next page
+- Skips typing if active
+
+--------------------------------------------------
+Data Storage
+--------------------------------------------------
+
+All settings are stored in NPC StoredData as JSON.
+
+Keys
+- dlg.mode
+- dlg.text
+- dlg.npc
+- dlg.asset
+- dlg.sound
+
+Settings persist after server reload.
+
+--------------------------------------------------
+Summary
+--------------------------------------------------
+
+This GUI enables:
+- In-game dialogue editing
+- Typing and paging effects
+- NPC cutscene rendering
+- UI background customization
+- Sound-integrated dialogue
+- Full simulation before use
