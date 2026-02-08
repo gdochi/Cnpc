@@ -3,18 +3,19 @@ var File=Java.type("java.io.File"),Files=Java.type("java.nio.file.Files"),Standa
 var RCTApi=Java.type("com.gitlab.srcmc.rctapi.api.RCTApi"),TrainerModel=Java.type("com.gitlab.srcmc.rctapi.api.models.TrainerModel");
 var BR=Java.type("com.cobblemon.mod.common.battles.BattleRegistry"),TBA=Java.type("com.cobblemon.mod.common.battles.actor.TrainerBattleActor"),PBA=Java.type("com.cobblemon.mod.common.battles.actor.PokemonBattleActor");
 
-var TID={DETECT:100,AUTO:300,UNLOCK_P:999},GID={PRED:40,FAIL:41};
+var TID={DETECT:100,AUTO:300,SYN:400,UNLOCK_P:999},GID={PRED:40,FAIL:41};
 var trainer,w,CFG;
-
 function init(e){
-  var n=e.npc;trainer=n;w=n.getWorld();CFG=callCFG(n);
-  n.getStoreddata().put("denyList","{}"); reset(n,"end");
+  var n=e.npc,sd=n.storeddata;trainer=n;w=n.getWorld();CFG=callCFG(n);
+  sd.put("denyList","{}"); 
+  reset(n,"end");
+  if(n.ai.getWalkingSpeed()>0)sd.put("speed",n.ai.getWalkingSpeed())
   n.timers.clear()
   var d=CFG.DETECTION||{}; if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true)
 }
 function interact(e){
-  var n=e.npc,p=e.player,td=n.getTempdata();
-  CFG=callCFG(n);
+  var n=e.npc,p=e.player,td=n.tempdata;trainer=n
+  var CFG=callCFG(n);
   var b=CFG.DETECTION||{};
   if(parseInt(b.detectType)!==0) return;
   if(doCheck(n,td,p)===false) return;
@@ -23,15 +24,21 @@ function interact(e){
   startFlow(n,p);
 }
 function timer(e){
-  if(e.id===TID.DETECT) doDetect(trainer,trainer.getTempdata());
-  if(e.id===TID.AUTO) battleStart(trainer);
+  var n=e.npc,td=n.tempdata
+  if(e.id===TID.DETECT) doDetect(n);
+  if(e.id===TID.AUTO) battleStart(n);
+  if(e.id===TID.SYN&&td.get("target")){
+    synAngle(n,td.get("target"));n.timers.forceStart(TID.SYN,10,false)}
 }
-function doDetect(n,td){
+function doDetect(n){
+  var td=n.tempdata,sd=n.storeddata,CFG=callCFG(n)
   var d=CFG.DETECTION||{},type=parseInt(d.detectType,10),p=null;
+  var s=n.ai.getWalkingSpeed();if(s>0&& sd.get("speed")&&sd.get("speed")!==s) sd.put("speed",s)
   if(type==0) return;
   if(type==1) p=fixT(n,d);
-  else if(type===2) p=radT(n,d);
+  else if(type==2)p=radT(n,d);
   if(!p) return;
+  if(n.canSeeEntity(p)!== true) return;
   if(doCheck(n,td,p)===false) return;
   td.put("target",p); td.put("busy","busy");
   startFlow(n,p);
@@ -45,7 +52,7 @@ function doCheck(n,td,p){
   if(isBattle(p)===false) return false;
 
   var CFG=callCFG(n);
-  var raw=p.getStoreddata().get("trainerData");
+  var raw=p.storeddata.get("trainerData");
   var data=raw?JSON.parse(raw):null;
   var rec=data?data[n.getUUID()]:null;
   
@@ -68,13 +75,14 @@ function fixT(n,d){
   return best;
 }
 function radT(n,d){
+  if(!n) return; var w = n.getWorld() 
   var r=d.radiusRange||10,L=w.getNearbyEntities(n.getPos(),r+1,1),best=null,m=9e9,ny=n.y,rr=r*r;
   for(var i=0;i<L.length;i++){var p=L[i],dx=p.x-n.x,dz=p.z-n.z,d2=dx*dx+dz*dz;if(d2<=rr&&Math.abs(p.y-ny)<=2&&d2<m){m=d2;best=p;}}
   return best;
 }
 function fw(n){var r=n.getRotation()*Math.PI/180;return{x:-Math.sin(r),z:Math.cos(r)};}
 function isDenied(n,p){
-  var raw=n.getStoreddata().get("denyList"); if(!raw) return false;
+  var raw=n.storeddata.get("denyList"); if(!raw) return false;
   var ts=JSON.parse(raw)[p.getUUID()]; if(!ts) return false;
   return Date.now()<ts;
 }
@@ -127,7 +135,7 @@ if(type==="item"){
 if(type==="stored"){
   if(!key) return{pass:false,msg:"✖ STORED key missing"};
   if(op!=="=="&&op!==">="&&op!=="<=") op="==";
-  var cur=p.getStoreddata().get(key),tgt=val!=null?""+val:"";
+  var cur=p.storeddata.get(key),tgt=val!=null?""+val:"";
 
   if(op==="==")
     return(""+cur)===tgt
@@ -171,7 +179,7 @@ if(type==="stored"){
   return{pass:false,msg:"✖ UNKNOWN type "+type};
 }
 function condRound(p,n,CFG){
-  var raw=p.getStoreddata().get("trainerData"),data=raw?JSON.parse(raw):null,rec=data?data[n.getUUID()]:null;
+  var raw=p.storeddata.get("trainerData"),data=raw?JSON.parse(raw):null,rec=data?data[n.getUUID()]:null;
   if(!(rec&&rec.firstClear===true)) return 0;
   var cleared=1; if(rec&&rec.clearCount!=null){var cc=parseInt(rec.clearCount,10);if(!isNaN(cc)&&cc>=1)cleared=cc;}
   var b=CFG.BATTLE||{}; if(!b.rematchEnable) return 1;
@@ -183,6 +191,9 @@ function startFlow(n,p){
   CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
+  n.storeddata.put("speed",n.ai.getWalkingSpeed())
+
+  n.addMark(2)
   if(mode==0){ n.timers.forceStart(TID.AUTO,1,false); return; }
   if(mode==1){
     doDash(n,p,CFG.POSITION||{});
@@ -192,7 +203,7 @@ function startFlow(n,p){
   }
 }
 function specDetach(n){
-  var sd=n.getStoreddata(), old=sd.get("trainer_attached_id");
+  var sd=n.storeddata, old=sd.get("trainer_attached_id");
   if(!old) return;
   try{ RCTApi.getInstance("tbcs").getTrainerRegistry().unregisterById(old); }catch(e){}
   sd.remove("trainer_attached_id");
@@ -223,19 +234,19 @@ function specApply(n,spec){
   specDetach(n);
   var id=specId(),tmp=specTemp(spec,id,n.getDisplay().getName()); if(!tmp) return false;
   var t=specRegister(n,id,tmp); if(!t) return false;
-  n.getStoreddata().put("trainer_attached_id",id);
+  n.storeddata.put("trainer_attached_id",id);
   try{ tmp.delete(); }catch(e){}
   return true;
 }
 function battleStart(n){
   CFG=callCFG(n);
 
-  var td=n.getTempdata(),p=td.get("target"); if(!p){;reset(n,"cancel");return;}
+  var td=n.tempdata,p=td.get("target"); if(!p){;reset(n,"cancel");return;}
   var rIdx=condRound(p,n,CFG),dt=CFG.DETAIL||{},spec=dt["trainerSpec_"+rIdx];
 
   var maxItemUses=parseInt(dt["itemLimit_"+rIdx],10); if(isNaN(maxItemUses)||maxItemUses<0) maxItemUses=0;
   if(!spec||!specApply(n,spec)){reset(n,"cancel");return;}
-  p.getStoreddata().put("battle_busy_by",n.getUUID()); p.getStoreddata().put("battle_busy_ts",Date.now());
+  p.storeddata.put("battle_busy_by",n.getUUID()); p.storeddata.put("battle_busy_ts",Date.now());
   var pos=CFG.POSITION||{};if(pos.useReposition===true) battleForwardTP(n,p,pos);
   n.setPosition((n.getHomeX()+0.5),(n.getHomeY()+1),(n.getHomeZ()+0.5))
   var basic=CFG.BASIC||{};if(basic.handItem) {var it=n.getWorld().createItem(basic.handItem,1);if(it) n.setMainhandItem(it);}
@@ -244,6 +255,9 @@ function battleStart(n){
   var bt="GEN_9_SINGLES",rules="{maxItemUses:"+maxItemUses+"}";
   var hook="onwin {1:['@2 noppes script trigger 1 "+p.getName()+"'],2:['@1 noppes script trigger 2 "+p.getName()+"']}";
   n.executeCommand("/tbcs battle "+bt+" "+p.getName()+" vs "+n.getUUID()+" "+hook+" rules "+rules);
+  svAngle(n,"save");
+  n.timers.forceStart(TID.SYN,10,false);
+  reset(n,"start")
 }
 function battleForwardTP(n,p,pos){
   var r=n.getRotation()*Math.PI/180;
@@ -260,42 +274,43 @@ function battleType(t){
   return "GEN_9_SINGLES";
 }
 function reset(n,flag){
-  var td=n.getTempdata(),t=n.timers,p=td.get("target"),d=CFG.DETECTION||{};
-  var m=n.getMarks()[0]; if(m) n.removeMark(m);
+  var td=n.tempdata,sd=n.storeddata,t=n.timers,p=td.get("target"),d=CFG.DETECTION||{};
+  var speed=sd.get("speed")
+  var m=n.getMarks()[0];if(m)n.removeMark(m);
   td.remove("busy"); 
   if(flag==="cancel"){
+    svAngle(n,"restore")
     n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
     n.setPosition(n.getHomeX()+0.5,n.getHomeY()+1,n.getHomeZ()+0.5);
-    setState(n);
+    if (speed) n.ai.setWalkingSpeed(speed); n.updateClient();
     if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true);
-    if(p) n.timers.forceStart(TID.UNLOCK_P,1,false); else td.clear();
+    td.clear();
     return;
   }
-  if(flag==="start"){ n.ai.setReturnsHome(false); n.ai.setWalkingSpeed(0); n.ai.setMovingType(0); return; }
+  if(flag==="start"){ setState(n); return; }
   if(flag==="end"){
+    svAngle(n,"restore")
     n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
     n.setPosition(n.getHomeX()+0.5,n.getHomeY()+1,n.getHomeZ()+0.5);
-    setState(n); td.clear();
+    if(speed) n.ai.setWalkingSpeed(speed);n.updateClient(); td.clear();
     if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true);
     return;
   }
 }
 function setState(n){
-  var ai=n.ai,b=CFG.BASIC||{},d=CFG.DETECTION||{},mh=parseInt(b.maxHealth,10)||20;
-  ai.setWalkingSpeed(parseFloat(b.walkSpeed)||0);
+  var b=CFG.BASIC||{},mh=parseInt(b.maxHealth,10)||20;
   n.getStats().setMaxHealth(mh); n.setHealth(mh);
-  if(d.detectType===1) ai.setStandingType(1);
-  else if(d.detectType===2) ai.setStandingType(2);
-  else ai.setStandingType(0);
+  n.ai.setStandingType(1)
+  n.ai.setWalkingSpeed(0)
   n.updateClient();
 }
 function addDeny(n,p,ms){
-  var sd=n.getStoreddata(),raw=sd.get("denyList"),obj=raw?JSON.parse(raw):{};
+  var sd=n.storeddata,raw=sd.get("denyList"),obj=raw?JSON.parse(raw):{};
   obj[p.getUUID()] = Date.now()+ms;
   sd.put("denyList", JSON.stringify(obj));
 }
 function callCFG(n){
-  var sd=n.getStoreddata();
+  var sd=n.storeddata;
   function j(k,d){var raw=sd.get(k);return raw?JSON.parse(raw):d;}
   return{BASIC:j("cfg.BASIC",{}),DETECTION:j("cfg.DETECTION",{}),BATTLE:j("cfg.BATTLE",{}),DETAIL:j("cfg.DETAIL",{}),CONDITION:j("cfg.CONDITION",{}),REWARD:j("cfg.REWARD",{}),POSITION:j("cfg.POSITION",{}),SOUND:j("cfg.SOUND",{}),EXTERNAL:j("cfg.EXTERNAL",{})};
 }
@@ -305,7 +320,7 @@ function trigger(e){
   var rIdx=condRound(p,n,CFG)
   if(CFG.SOUND&&CFG.SOUND.start) n.executeCommand("stopsound "+p.getName());
   if(e.id===1){
-    var s=CFG.BATTLE||{},t=parseInt(s.denyCooldown,10)||0;
+    var s=CFG.BATTLE||{},t=parseInt(s.denyCooldown,10)||100;
     if(t>0) addDeny(n,p,t*50);
     afterReward(n,p,rIdx);
     afterClear(p,n);
@@ -316,22 +331,19 @@ function trigger(e){
   reset(n,"end");
 }
 function afterClear(p,n){
-  var sd=p.getStoreddata(),raw=sd.get("trainerData"),obj=raw?JSON.parse(raw):{},k=n.getUUID(),r=obj[k]||{};
+  var sd=p.storeddata,raw=sd.get("trainerData"),obj=raw?JSON.parse(raw):{},k=n.getUUID(),r=obj[k]||{};
   r.firstClear=true;
   r.clearCount=(r.clearCount||0)+1;
   obj[k]=r;
   sd.put("trainerData",JSON.stringify(obj));
 }
 function afterReward(n,p,round){
-  var raw=n.getStoreddata().get("cfg.REWARD");
+  var raw=n.storeddata.get("cfg.REWARD");
   if(!raw){ p.message("§c[Reward] No reward config found."); return; }
 
   var cfg=JSON.parse(raw);
   var data=cfg["round_"+round];
-  if(!data||!data.rewards||!data.rewards.length){
-    p.message("§e[Reward] No rewards for this round.");
-    return;
-  }
+  if(!data||!data.rewards||!data.rewards.length){p.message("§e[Reward] No rewards for this round.");return;}
   var list=data.rewards,pick=list;
   var mode=parseInt(data.mode,10)||0;
   if(mode===1) pick=[list[Math.floor(Math.random()*list.length)]];
@@ -372,5 +384,21 @@ function sayBattleGui(p,n,rIdx){
   g.addColoredLine(13,-1000,by+2,1000,by+2,LINE_MAIN,THICK);
   p.showCustomGui(g);
 }
-
-
+function synAngle(n,p){
+  if(!n || !p) return;
+  var dx=p.x-n.x,dz=p.z-n.z;
+  var yaw = Math.atan2(-dx, dz) * 180 / Math.PI;
+  n.setRotation(yaw);n.updateClient();
+}
+function svAngle(n,flag){
+   var sd=n.storeddata
+   if (flag=="save"){
+   sd.put("standing",n.ai.getStandingType())
+   sd.put("angle",n.getRotation());return;}
+   if (flag=="restore"){
+    var st=parseInt(sd.get("standing"), 10),an=parseFloat(sd.get("angle"))
+    if(!isNaN(st)) n.ai.setStandingType(st);if(!isNaN(an)) n.setRotation(an)
+   }
+   n.updateClient();
+   
+}
