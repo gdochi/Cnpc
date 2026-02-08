@@ -193,7 +193,7 @@ function startFlow(n,p){
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
   n.storeddata.put("speed",n.ai.getWalkingSpeed())
 
-  n.addMark(2)
+  n.addMark(2);svAngle(n,"save");synAngle(n,p);
   if(mode==0){ n.timers.forceStart(TID.AUTO,1,false); return; }
   if(mode==1){
     doDash(n,p,CFG.POSITION||{});
@@ -255,7 +255,6 @@ function battleStart(n){
   var bt="GEN_9_SINGLES",rules="{maxItemUses:"+maxItemUses+"}";
   var hook="onwin {1:['@2 noppes script trigger 1 "+p.getName()+"'],2:['@1 noppes script trigger 2 "+p.getName()+"']}";
   n.executeCommand("/tbcs battle "+bt+" "+p.getName()+" vs "+n.getUUID()+" "+hook+" rules "+rules);
-  svAngle(n,"save");
   n.timers.forceStart(TID.SYN,10,false);
   reset(n,"start")
 }
