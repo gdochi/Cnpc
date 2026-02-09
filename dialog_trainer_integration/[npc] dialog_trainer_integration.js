@@ -183,6 +183,7 @@ function condRound(p,n,CFG){
 }
 function startFlow(n,p){
   PLAYER=p;TELLER=n;
+  makeSIM()
   var raw=n.getStoreddata().get("dlg.text");
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
   n.storeddata.put("speed",n.ai.getWalkingSpeed())
@@ -216,6 +217,7 @@ function startDialogue(nextFn){
   PLAYER.showCustomGui(g);
   dlgStartPage(0);
 }
+function makeSIM(){return {page: 0,line: 0,char: 0,lines: [],dlg: [],max: 1,type: "page",typing: false};}
 function dlgStartPage(p){
   SIM.page=p;SIM.lines=[];SIM.line=0;SIM.char=0;
   if(SIM.type==="page"){dlgFullPage();return;}
