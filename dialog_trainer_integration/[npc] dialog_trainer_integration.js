@@ -20,7 +20,6 @@ function toInt(v,d){var n=parseInt(String(v),10);return isNaN(n)?d:n;}
 function toF(v,d){var n=parseFloat(String(v));return isNaN(n)?d:n;}
 function merge(b,d){for(var k in d){if(d[k]!==null&&typeof d[k]==="object"&&!Array.isArray(d[k])){if(!b[k]) b[k]={};merge(b[k],d[k]);}else b[k]=d[k];}return b;}
 function load(sd,k,def){var b=JSON.parse(JSON.stringify(def)),r=sd.get(k);if(!r) return b;try{return merge(b,JSON.parse(r));}catch(e){return b;}}
-
 function init(e){
   var n=e.npc;trainer=n;w=n.getWorld();CFG=callCFG(n);
   n.getStoreddata().put("denyList","{}");reset(n,"end");
@@ -75,10 +74,10 @@ function doCheck(n,td,p){
 function doDash(n,p,pos){
   if(!pos||pos.dashEnable!==true||!p) return;
   var dx=p.x-n.x,dz=p.z-n.z;
-  var len=Math.sqrt(dx*dx+dz*dz);if(len<=0) return;
-  dx/=len;dz/=len;
+  var len=Math.sqrt(dx*dx+dz*dz); if(len<=0) return;
+  dx/=len; dz/=len;
   var pow=parseFloat(pos.dashPower)||1.2;
-  n.setMotionX(dx*pow);n.setMotionY(0.1);n.setMotionZ(dz*pow);
+  n.setMotionX(dx*pow); n.setMotionY(0.1); n.setMotionZ(dz*pow);
 }
 function fixT(n,d){
   var r=(d.visionDistance||8)+1,L=w.getNearbyEntities(n.getPos(),r,1),f=fw(n),best=null,m=9e9,ny=n.y,wd=d.visionWidth||1;
@@ -86,14 +85,15 @@ function fixT(n,d){
   return best;
 }
 function radT(n,d){
+  if(!n) return; var w = n.getWorld() 
   var r=d.radiusRange||10,L=w.getNearbyEntities(n.getPos(),r+1,1),best=null,m=9e9,ny=n.y,rr=r*r;
   for(var i=0;i<L.length;i++){var p=L[i],dx=p.x-n.x,dz=p.z-n.z,d2=dx*dx+dz*dz;if(d2<=rr&&Math.abs(p.y-ny)<=2&&d2<m){m=d2;best=p;}}
   return best;
 }
 function fw(n){var r=n.getRotation()*Math.PI/180;return{x:-Math.sin(r),z:Math.cos(r)};}
 function isDenied(n,p){
-  var raw=n.getStoreddata().get("denyList");if(!raw) return false;
-  var ts=JSON.parse(raw)[p.getUUID()];if(!ts) return false;
+  var raw=n.storeddata.get("denyList"); if(!raw) return false;
+  var ts=JSON.parse(raw)[p.getUUID()]; if(!ts) return false;
   return Date.now()<ts;
 }
 function isBattle(p){
@@ -182,6 +182,10 @@ function condRound(p,n,CFG){
 function startFlow(n,p){
   PLAYER=p;TELLER=n;
   var raw=n.getStoreddata().get("dlg.text");
+  var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
+  n.storeddata.put("speed",n.ai.getWalkingSpeed())
+  n.addMark(2);svAngle(n,"save");synAngle(n,p);
+  if(mode==1)doDash(n,p,CFG.POSITION||{});
   if(raw && String(raw).length>0){startDialogue(function(){battleStart(n);});return;}
   battleStart(n);
 }
@@ -189,11 +193,8 @@ function startFlowBattle(n,p){
   var CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
-  n.storeddata.put("speed",n.ai.getWalkingSpeed())
-  n.addMark(2);svAngle(n,"save");synAngle(n,p);
   if(mode==0){n.timers.forceStart(TID.AUTO,1,false);return;}
   if(mode==1){
-    doDash(n,p,CFG.POSITION||{});
     sayBattleGui(p,n,rIdx);
     n.timers.forceStart(TID.AUTO,b.startDelay||20,false);
     return;
