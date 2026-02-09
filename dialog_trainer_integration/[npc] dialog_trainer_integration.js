@@ -3,7 +3,7 @@ var File=Java.type("java.io.File"),Files=Java.type("java.nio.file.Files"),Standa
 var RCTApi=Java.type("com.gitlab.srcmc.rctapi.api.RCTApi"),TrainerModel=Java.type("com.gitlab.srcmc.rctapi.api.models.TrainerModel");
 var BR=Java.type("com.cobblemon.mod.common.battles.BattleRegistry"),TBA=Java.type("com.cobblemon.mod.common.battles.actor.TrainerBattleActor"),PBA=Java.type("com.cobblemon.mod.common.battles.actor.PokemonBattleActor");
 
-var TID={DETECT:100,AUTO:300,DLG:901,UNLOCK_P:999},GID={DLG:201,PRED:40,FAIL:41};
+var TID={DETECT:100,AUTO:300,SYN:400,DLG:500,UNLOCK_P:999},GID={DLG:39,PRED:40,FAIL:41};
 var trainer,w,CFG;
 
 var PLAYER=null,TELLER=null,SIM=null,DLG_NEXT=null;
@@ -16,7 +16,6 @@ var DF={
   ASSET:{texture:"",rect:{x:0,y:0,w:0,h:0,tx:0,ty:0}},
   SOUND:{open:{},sentence:{},char:{}}
 };
-
 function toInt(v,d){var n=parseInt(String(v),10);return isNaN(n)?d:n;}
 function toF(v,d){var n=parseFloat(String(v));return isNaN(n)?d:n;}
 function merge(b,d){for(var k in d){if(d[k]!==null&&typeof d[k]==="object"&&!Array.isArray(d[k])){if(!b[k]) b[k]={};merge(b[k],d[k]);}else b[k]=d[k];}return b;}
@@ -28,7 +27,6 @@ function init(e){
   n.timers.clear();
   var d=CFG.DETECTION||{};if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true);
 }
-
 function interact(e){
   var n=e.npc,p=e.player,td=n.getTempdata();
   CFG=callCFG(n);
@@ -39,25 +37,24 @@ function interact(e){
   td.put("busy","busy");
   startFlow(n,p);
 }
-
 function timer(e){
+  var n=e.npc,td=n.tempdata 
   if(e.id===TID.DETECT) doDetect(trainer,trainer.getTempdata());
   if(e.id===TID.AUTO) battleStart(trainer);
   if(e.id===TID.DLG) dlgTick();
-  if(e.id===TID.UNLOCK_P) unlockP(trainer);
+  if(e.id===TID.SYN&&td.get("target")){synAngle(n,td.get("target"));n.timers.forceStart(TID.SYN,10,false)}
 }
-
 function doDetect(n,td){
   var d=CFG.DETECTION||{},type=parseInt(d.detectType,10),p=null;
   if(type==0) return;
   if(type==1) p=fixT(n,d);
   else if(type===2) p=radT(n,d);
   if(!p) return;
+  if(n.canSeeEntity(p)!== true) return;
   if(doCheck(n,td,p)===false) return;
   td.put("target",p);td.put("busy","busy");
   startFlow(n,p);
 }
-
 function doCheck(n,td,p){
   if(!p) return false;
   var gm=p.getGamemode();
@@ -75,7 +72,6 @@ function doCheck(n,td,p){
   var r=isCondSat(p,n,false);if(!r.ok) return false;
   return true;
 }
-
 function doDash(n,p,pos){
   if(!pos||pos.dashEnable!==true||!p) return;
   var dx=p.x-n.x,dz=p.z-n.z;
@@ -84,27 +80,22 @@ function doDash(n,p,pos){
   var pow=parseFloat(pos.dashPower)||1.2;
   n.setMotionX(dx*pow);n.setMotionY(0.1);n.setMotionZ(dz*pow);
 }
-
 function fixT(n,d){
   var r=(d.visionDistance||8)+1,L=w.getNearbyEntities(n.getPos(),r,1),f=fw(n),best=null,m=9e9,ny=n.y,wd=d.visionWidth||1;
   for(var i=0;i<L.length;i++){var p=L[i],dx=p.x-n.x,dz=p.z-n.z,dot=dx*f.x+dz*f.z;if(dot>0&&Math.abs(dx*f.z-dz*f.x)<=wd&&Math.abs(p.y-ny)<=2&&dot<m){m=dot;best=p;}}
   return best;
 }
-
 function radT(n,d){
   var r=d.radiusRange||10,L=w.getNearbyEntities(n.getPos(),r+1,1),best=null,m=9e9,ny=n.y,rr=r*r;
   for(var i=0;i<L.length;i++){var p=L[i],dx=p.x-n.x,dz=p.z-n.z,d2=dx*dx+dz*dz;if(d2<=rr&&Math.abs(p.y-ny)<=2&&d2<m){m=d2;best=p;}}
   return best;
 }
-
 function fw(n){var r=n.getRotation()*Math.PI/180;return{x:-Math.sin(r),z:Math.cos(r)};}
-
 function isDenied(n,p){
   var raw=n.getStoreddata().get("denyList");if(!raw) return false;
   var ts=JSON.parse(raw)[p.getUUID()];if(!ts) return false;
   return Date.now()<ts;
 }
-
 function isBattle(p){
   var b=BR.getBattleByParticipatingPlayer(p.getMCEntity());
   if(!b) return true;
@@ -112,7 +103,6 @@ function isBattle(p){
   for each(var a in b.getActors()) if(a instanceof PBA){var o=a.getPokemon().getOriginalPokemon().getOwnerPlayer();if(o==null) return false;}
   return false;
 }
-
 function isCondSat(p,n,debug){
   var log=[],CFG=callCFG(n),condAll=CFG.CONDITION||{};
   if(debug) log.push("RAW "+JSON.stringify(condAll));
@@ -129,7 +119,6 @@ function isCondSat(p,n,debug){
   }
   return mode===1 ? (debug?{ok:false,key:key,mode:mode,log:log}:{ok:false,key:key,mode:mode}) : (debug?{ok:true,key:key,mode:mode,log:log}:{ok:true,key:key,mode:mode});
 }
-
 function condOne(p,n,type,op,key,val){
   if(type==="item"){
     if(!key) return{pass:false,msg:"✖ ITEM key missing"};
@@ -181,36 +170,27 @@ function condOne(p,n,type,op,key,val){
   }
   return{pass:false,msg:"✖ UNKNOWN type "+type};
 }
-
 function condRound(p,n,CFG){
   var raw=p.getStoreddata().get("trainerData"),data=raw?JSON.parse(raw):null,rec=data?data[n.getUUID()]:null;
   if(!(rec&&rec.firstClear===true)) return 0;
   var cleared=1;if(rec&&rec.clearCount!=null){var cc=parseInt(rec.clearCount,10);if(!isNaN(cc)&&cc>=1)cleared=cc;}
-  var b=CFG.BATTLE||{};if(!b.rematchEnable) return 1;
+  var b=CFG.BATTLE||{};if(b.rematchEnable==false) return 1;
   var m=parseInt(b.rematchMax,10);if(isNaN(m)||m<0) m=0;
   var maxIdx=1+m;if(cleared>maxIdx) cleared=maxIdx;if(cleared<1) cleared=1;
   return cleared;
 }
-
 function startFlow(n,p){
-  CFG=callCFG(n);
-  PLAYER=p;
-  TELLER=n;
+  PLAYER=p;TELLER=n;
   var raw=n.getStoreddata().get("dlg.text");
-  if(raw && String(raw).length>0){
-    startDialogue(function(){
-      battleStart(n);
-    });
-    return;
-  }
-
+  if(raw && String(raw).length>0){startDialogue(function(){battleStart(n);});return;}
   battleStart(n);
 }
-
 function startFlowBattle(n,p){
-  CFG=callCFG(n);
+  var CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
+  n.storeddata.put("speed",n.ai.getWalkingSpeed())
+  n.addMark(2);svAngle(n,"save");synAngle(n,p);
   if(mode==0){n.timers.forceStart(TID.AUTO,1,false);return;}
   if(mode==1){
     doDash(n,p,CFG.POSITION||{});
@@ -220,7 +200,6 @@ function startFlowBattle(n,p){
   }
   n.timers.forceStart(TID.AUTO,1,false);
 }
-
 function startDialogue(nextFn){
   DLG_NEXT=nextFn||null;
   var sd=TELLER.getStoreddata();
@@ -234,7 +213,6 @@ function startDialogue(nextFn){
   PLAYER.showCustomGui(g);
   dlgStartPage(0);
 }
-
 function dlgStartPage(p){
   SIM.page=p;SIM.lines=[];SIM.line=0;SIM.char=0;
   if(SIM.type==="page"){dlgFullPage();return;}
@@ -242,14 +220,12 @@ function dlgStartPage(p){
   TELLER.timers.forceStart(TID.DLG,1,false);
   dlgUpdate();
 }
-
 function dlgFullPage(){
   var out=[],base=SIM.page*SIM.max;
   for(var i=0;i<SIM.max;i++){var l=SIM.dlg[base+i];if(l==null) break;out.push(l);}
   SIM.lines=out;SIM.line=out.length;SIM.char=0;SIM.typing=false;
   dlgUpdate();
 }
-
 function dlgTick(){
   if(!SIM||!SIM.typing) return;
   var sd=TELLER.getStoreddata();
@@ -311,7 +287,6 @@ function dlgDraw(g){
     var ed=g.addEntityDisplay(DID.ENTITY,npc.pos.x,npc.pos.y,TELLER);
     ed.setRotation(npc.rot);ed.setScale(npc.scale);ed.setFollowingCursor(npc.follow==="true");
   }
-
   var lx=txt.ui.labelX+(asset.rect?asset.rect.x:0);
   var ly=txt.ui.labelY+(asset.rect?asset.rect.y:0);
   for(var i=0;i<SIM.lines.length;i++) g.addLabel(DID.TEXT+i,SIM.lines[i],lx,ly+i*txt.ui.lineGap,256,12);
@@ -320,13 +295,11 @@ function dlgDraw(g){
   g.addLabel(DID.PAGE,"§f"+(SIM.page+1)+"/"+total,mode.ui.pageLabel.x,mode.ui.pageLabel.y,80,16);
   g.addButton(DID.NEXT,">",mode.ui.nextBtn.x,mode.ui.nextBtn.y,20,20);
 }
-
 function dlgClear(g){
   g.removeComponent(DID.PREV);g.removeComponent(DID.NEXT);g.removeComponent(DID.PAGE);
   g.removeComponent(DID.BG);g.removeComponent(DID.ENTITY);
   for(var i=0;i<200;i++) g.removeComponent(DID.TEXT+i);
 }
-
 function customGuiButton(e){
   if(e.gui.getID()===GID.DLG){
     if(e.buttonId===DID.NEXT) dlgNextPage();
@@ -334,7 +307,6 @@ function customGuiButton(e){
     return;
   }
 }
-
 function customGuiClosed(e){
   if(e.gui.getID()!==GID.DLG) return;
   SIM=null;
@@ -342,32 +314,26 @@ function customGuiClosed(e){
   var fn=DLG_NEXT;DLG_NEXT=null;
   if(fn) fn();
 }
-
 function specDetach(n){
   var sd=n.getStoreddata(),old=sd.get("trainer_attached_id");
   if(!old) return;
   try{RCTApi.getInstance("tbcs").getTrainerRegistry().unregisterById(old);}catch(e){}
   sd.remove("trainer_attached_id");
 }
-
 function specId(){return "trainer_"+Math.floor(Math.random()*900000+100000);}
-
 function specDir(){
   var raw=CFG.EXTERNAL.folderPath||"";if(!raw) return null;
   var f=(raw.indexOf(":")!==-1||raw.startsWith("/")||raw.startsWith("\\"))?new File(raw):new File(new File("."),raw);
   if(!f.exists()) f.mkdirs();
   return f;
 }
-
 function specLoad(f){return new java.lang.String(Files.readAllBytes(f.toPath()),StandardCharsets.UTF_8);}
-
 function specTemp(spec,id,name){
   var src=new File(specDir(),spec+".json");if(!src.exists()) return null;
   var tmp=new File(specDir(),id+".json"),raw=specLoad(src),mod=raw.replace(/"name"\s*:\s*"([^"]*)"/,'"name": "'+name+'"');
   Files.write(tmp.toPath(),mod.getBytes(StandardCharsets.UTF_8));
   return tmp;
 }
-
 function specRegister(n,id,json){
   var raw=specLoad(json),api=RCTApi.getInstance("tbcs"),reg=api.getTrainerRegistry(),g=api.gsonBuilder().disableHtmlEscaping().create(),m=g.fromJson(raw,TrainerModel.class);
   try{reg.unregisterById(id);}catch(e){}
@@ -375,7 +341,6 @@ function specRegister(n,id,json){
   t.setEntity(n.getMCEntity());
   return t;
 }
-
 function specApply(n,spec){
   if(!spec) return false;
   specDetach(n);
@@ -385,9 +350,8 @@ function specApply(n,spec){
   try{tmp.delete();}catch(e){}
   return true;
 }
-
 function battleStart(n){
-  CFG=callCFG(n);
+  var CFG=callCFG(n);
   var td=n.getTempdata(),p=td.get("target");if(!p){reset(n,"cancel");return;}
   var rIdx=condRound(p,n,CFG),dt=CFG.DETAIL||{},spec=dt["trainerSpec_"+rIdx];
 
@@ -402,8 +366,9 @@ function battleStart(n){
   var bt="GEN_9_SINGLES",rules="{maxItemUses:"+maxItemUses+"}";
   var hook="onwin {1:['@2 noppes script trigger 1 "+p.getName()+"'],2:['@1 noppes script trigger 2 "+p.getName()+"']}";
   n.executeCommand("/tbcs battle "+bt+" "+p.getName()+" vs "+n.getUUID()+" "+hook+" rules "+rules);
+  n.timers.forceStart(TID.SYN,10,false);
+  reset(n,"start")
 }
-
 function battleForwardTP(n,p,pos){
   var r=n.getRotation()*Math.PI/180;
   var dist=(pos.playerDistance!=null?pos.playerDistance:0);
@@ -412,58 +377,54 @@ function battleForwardTP(n,p,pos){
   var fz=Math.cos(r)*dist;
   p.setPosition((n.getHomeX()+fx),(n.getHomeY()+yoff),(n.getHomeZ()+fz));
 }
-
 function reset(n,flag){
-  var td=n.getTempdata(),t=n.timers,p=td.get("target"),d=CFG.DETECTION||{};
+  var td=n.tempdata,sd=n.storeddata,t=n.timers,p=td.get("target"),d=CFG.DETECTION||{};
+  var speed=sd.get("speed")
   var m=n.getMarks()[0];if(m) n.removeMark(m);
   td.remove("busy");
   if(flag==="cancel"){
+    svAngle(n,"restore")
     n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
     n.setPosition(n.getHomeX()+0.5,n.getHomeY()+1,n.getHomeZ()+0.5);
-    setState(n);
+    if (speed) n.ai.setWalkingSpeed(speed); n.updateClient();
     if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true);
-    if(p) n.timers.forceStart(TID.UNLOCK_P,1,false); else td.clear();
+    td.clear();
     return;
   }
-  if(flag==="start"){n.ai.setReturnsHome(false);n.ai.setWalkingSpeed(0);n.ai.setMovingType(0);return;}
+  if(flag==="start"){setState(n); return;}
   if(flag==="end"){
+    svAngle(n,"restore")
     n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
     n.setPosition(n.getHomeX()+0.5,n.getHomeY()+1,n.getHomeZ()+0.5);
-    setState(n);td.clear();
+    if(speed) n.ai.setWalkingSpeed(speed);n.updateClient(); td.clear();
     if(d.detectType!==0) n.timers.forceStart(TID.DETECT,d.detectTick||20,true);
     return;
   }
 }
-
 function setState(n){
-  var ai=n.ai,b=CFG.BASIC||{},d=CFG.DETECTION||{},mh=parseInt(b.maxHealth,10)||20;
-  ai.setWalkingSpeed(parseFloat(b.walkSpeed)||0);
-  n.getStats().setMaxHealth(mh);n.setHealth(mh);
-  if(d.detectType===1) ai.setStandingType(1);
-  else if(d.detectType===2) ai.setStandingType(2);
-  else ai.setStandingType(0);
+  var b=CFG.BASIC||{},mh=parseInt(b.maxHealth,10)||20;
+  n.getStats().setMaxHealth(mh); n.setHealth(mh);
+  n.ai.setStandingType(1)
+  n.ai.setWalkingSpeed(0)
   n.updateClient();
 }
-
 function addDeny(n,p,ms){
   var sd=n.getStoreddata(),raw=sd.get("denyList"),obj=raw?JSON.parse(raw):{};
   obj[p.getUUID()]=Date.now()+ms;
   sd.put("denyList",JSON.stringify(obj));
 }
-
 function callCFG(n){
   var sd=n.getStoreddata();
   function j(k,d){var raw=sd.get(k);return raw?JSON.parse(raw):d;}
   return{BASIC:j("cfg.BASIC",{}),DETECTION:j("cfg.DETECTION",{}),BATTLE:j("cfg.BATTLE",{}),DETAIL:j("cfg.DETAIL",{}),CONDITION:j("cfg.CONDITION",{}),REWARD:j("cfg.REWARD",{}),POSITION:j("cfg.POSITION",{}),SOUND:j("cfg.SOUND",{}),EXTERNAL:j("cfg.EXTERNAL",{})};
 }
-
 function trigger(e){
   var n=e.entity,p=n.getWorld().getPlayer(e.arguments[0]);if(!p) return;
   CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
   if(CFG.SOUND&&CFG.SOUND.start) n.executeCommand("stopsound "+p.getName());
   if(e.id===1){
-    var s=CFG.BATTLE||{},t=parseInt(s.denyCooldown,10)||0;
+    var s=CFG.BATTLE||{},t=parseInt(s.denyCooldown,10)||100;
     if(t>0) addDeny(n,p,t*50);
     afterReward(n,p,rIdx);
     afterClear(p,n);
@@ -471,14 +432,13 @@ function trigger(e){
     return;
   }
   if(e.id===2){
-    var s2=CFG.BATTLE||{},t2=parseInt(s2.denyCooldown,10)||0;
+    var s2=CFG.BATTLE||{},t2=parseInt(s2.denyCooldown,10)||100;
     if(t2>0) addDeny(n,p,t2*50);
     reset(n,"cancel");
     return;
   }
   reset(n,"end");
 }
-
 function afterClear(p,n){
   var sd=p.getStoreddata(),raw=sd.get("trainerData"),obj=raw?JSON.parse(raw):{},k=n.getUUID(),r=obj[k]||{};
   r.firstClear=true;
@@ -486,7 +446,6 @@ function afterClear(p,n){
   obj[k]=r;
   sd.put("trainerData",JSON.stringify(obj));
 }
-
 function afterReward(n,p,round){
   var raw=n.getStoreddata().get("cfg.REWARD");
   if(!raw){p.message("§c[Reward] No reward config found.");return;}
@@ -519,10 +478,20 @@ function sayBattleGui(p,n,rIdx){
   g.addColoredLine(13,-1000,by+2,1000,by+2,LINE_MAIN,THICK);
   p.showCustomGui(g);
 }
-
-function unlockP(n){
-  var td=n.getTempdata(),p=td.get("target");
-  if(!p){td.clear();return;}
-  try{p.getStoreddata().remove("battle_busy_by");p.getStoreddata().remove("battle_busy_ts");}catch(e){}
-  td.clear();
+function synAngle(n,p){
+  if(!n || !p) return;
+  var dx=p.x-n.x,dz=p.z-n.z;
+  var yaw = Math.atan2(-dx, dz) * 180 / Math.PI;
+  n.setRotation(yaw);n.updateClient();
+}
+function svAngle(n,flag){
+   var sd=n.storeddata
+   if (flag=="save"){
+   sd.put("standing",n.ai.getStandingType())
+   sd.put("angle",n.getRotation());return;}
+   if (flag=="restore"){
+    var st=parseInt(sd.get("standing"), 10),an=parseFloat(sd.get("angle"))
+    if(!isNaN(st)) n.ai.setStandingType(st);if(!isNaN(an)) n.setRotation(an)
+   }
+   n.updateClient();
 }
