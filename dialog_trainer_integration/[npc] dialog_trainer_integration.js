@@ -359,7 +359,7 @@ function battleStart(n){
   var CFG=callCFG(n);
   var td=n.getTempdata(),p=td.get("target");if(!p){reset(n,"cancel");return;}
   var rIdx=condRound(p,n,CFG),dt=CFG.DETAIL||{},spec=dt["trainerSpec_"+rIdx];
-
+  n.executeCommand("stopsound "+p.getName())
   var maxItemUses=parseInt(dt["itemLimit_"+rIdx],10);if(isNaN(maxItemUses)||maxItemUses<0) maxItemUses=0;
   if(!spec||!specApply(n,spec)){reset(n,"cancel");return;}
   p.getStoreddata().put("battle_busy_by",n.getUUID());p.getStoreddata().put("battle_busy_ts",Date.now());
