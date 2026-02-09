@@ -27,8 +27,7 @@ function timer(e){
   var n=e.npc,td=n.tempdata
   if(e.id===TID.DETECT) doDetect(n);
   if(e.id===TID.AUTO) battleStart(n);
-  if(e.id===TID.SYN&&td.get("target")){
-    synAngle(n,td.get("target"));n.timers.forceStart(TID.SYN,10,false)}
+  if(e.id===TID.SYN&&td.get("target")){synAngle(n,td.get("target"));n.timers.forceStart(TID.SYN,10,false)}
 }
 function doDetect(n){
   var td=n.tempdata,sd=n.storeddata,CFG=callCFG(n)
@@ -182,13 +181,13 @@ function condRound(p,n,CFG){
   var raw=p.storeddata.get("trainerData"),data=raw?JSON.parse(raw):null,rec=data?data[n.getUUID()]:null;
   if(!(rec&&rec.firstClear===true)) return 0;
   var cleared=1; if(rec&&rec.clearCount!=null){var cc=parseInt(rec.clearCount,10);if(!isNaN(cc)&&cc>=1)cleared=cc;}
-  var b=CFG.BATTLE||{}; if(!b.rematchEnable) return 1;
+  var b=CFG.BATTLE||{}; if(b.rematchEnable==false) return 1;
   var m=parseInt(b.rematchMax,10); if(isNaN(m)||m<0) m=0;
   var maxIdx=1+m; if(cleared>maxIdx) cleared=maxIdx; if(cleared<1) cleared=1;
   return cleared;
 }
 function startFlow(n,p){
-  CFG=callCFG(n);
+  var CFG=callCFG(n);
   var rIdx=condRound(p,n,CFG);
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
   n.storeddata.put("speed",n.ai.getWalkingSpeed())
@@ -239,7 +238,7 @@ function specApply(n,spec){
   return true;
 }
 function battleStart(n){
-  CFG=callCFG(n);
+  var CFG=callCFG(n);
 
   var td=n.tempdata,p=td.get("target"); if(!p){;reset(n,"cancel");return;}
   var rIdx=condRound(p,n,CFG),dt=CFG.DETAIL||{},spec=dt["trainerSpec_"+rIdx];
@@ -399,5 +398,4 @@ function svAngle(n,flag){
     if(!isNaN(st)) n.ai.setStandingType(st);if(!isNaN(an)) n.setRotation(an)
    }
    n.updateClient();
-   
 }
