@@ -31,34 +31,36 @@ function interact(e){
   CFG=callCFG(n);
   var b=CFG.DETECTION||{};
   if(parseInt(b.detectType)!==0) return;
-  if(doCheck(n,td,p)===false) return;
+  if(doCheck(n,p)===false) return;
   td.put("target",p);
   td.put("busy","busy");
   startFlow(n,p);
 }
 function timer(e){
   var n=e.npc,td=n.tempdata 
-  if(e.id===TID.DETECT) doDetect(trainer,trainer.getTempdata());
+  if(e.id===TID.DETECT) doDetect(trainer);
   if(e.id===TID.AUTO) battleStart(trainer);
   if(e.id===TID.DLG) dlgTick();
   if(e.id===TID.SYN&&td.get("target")){synAngle(n,td.get("target"));n.timers.forceStart(TID.SYN,10,false)}
 }
-function doDetect(n,td){
+function doDetect(n){
   var d=CFG.DETECTION||{},type=parseInt(d.detectType,10),p=null;
+  var td=n.tempdata
   if(type==0) return;
   if(type==1) p=fixT(n,d);
   else if(type===2) p=radT(n,d);
   if(!p) return;
   if(n.canSeeEntity(p)!== true) return;
-  if(doCheck(n,td,p)===false) return;
-  td.put("target",p);td.put("busy","busy");
+  if(doCheck(n,p)===false) return;
+  td.put("target",p);
+  td.put("busy","busy");
   startFlow(n,p);
 }
-function doCheck(n,td,p){
+function doCheck(n,p){
   if(!p) return false;
-  var gm=p.getGamemode();
+  var gm=p.getGamemode();var td=n.tempdata
   if(gm===1||gm===3) return false;
-  if(td.get("busy")==="busy") return false;
+  if(td.get("busy")=="busy") return false;
   if(isDenied(n,p)) return false;
   if(isBattle(p)===false) return false;
 
@@ -91,10 +93,10 @@ function radT(n,d){
   return best;
 }
 function fw(n){var r=n.getRotation()*Math.PI/180;return{x:-Math.sin(r),z:Math.cos(r)};}
-function isDenied(n,p){
-  var raw=n.storeddata.get("denyList"); if(!raw) return false;
-  var ts=JSON.parse(raw)[p.getUUID()]; if(!ts) return false;
-  return Date.now()<ts;
+function isDenied(n){
+  var until=n.getStoreddata().get("deny_until");
+  if(!until) return false;
+  return Date.now() < parseInt(until,10);
 }
 function isBattle(p){
   var b=BR.getBattleByParticipatingPlayer(p.getMCEntity());
@@ -256,9 +258,11 @@ function dlgTick(){
   TELLER.timers.forceStart(TID.DLG,1,false);
 }
 function dlgNextPage(){
+  if(!SIM) return;
   if(SIM.typing){dlgFullPage();return;}
   var max=Math.ceil(SIM.dlg.length/SIM.max)-1;
   if(SIM.page>=max){
+    TELLER.timers.stop(TID.DLG);
     PLAYER.closeGui();
     return;
   }
@@ -310,8 +314,8 @@ function customGuiButton(e){
 }
 function customGuiClosed(e){
   if(e.gui.getID()!==GID.DLG) return;
-  SIM=null;
   TELLER.timers.stop(TID.DLG);
+  SIM=null;
   var fn=DLG_NEXT;DLG_NEXT=null;
   if(fn) fn();
 }
@@ -382,7 +386,7 @@ function reset(n,flag){
   var td=n.tempdata,sd=n.storeddata,t=n.timers,p=td.get("target"),d=CFG.DETECTION||{};
   var speed=sd.get("speed")
   var m=n.getMarks()[0];if(m) n.removeMark(m);
-  td.remove("busy");
+
   if(flag==="cancel"){
     svAngle(n,"restore")
     n.setMainhandItem(n.getWorld().createItem("minecraft:air",1));
@@ -410,9 +414,8 @@ function setState(n){
   n.updateClient();
 }
 function addDeny(n,p,ms){
-  var sd=n.getStoreddata(),raw=sd.get("denyList"),obj=raw?JSON.parse(raw):{};
-  obj[p.getUUID()]=Date.now()+ms;
-  sd.put("denyList",JSON.stringify(obj));
+  if(ms<=0||!n) return;
+  n.getStoreddata().put("deny_until",Date.now()+ms);
 }
 function callCFG(n){
   var sd=n.getStoreddata();
