@@ -9,7 +9,7 @@ var DF = {
   },
   TEXT: {text:"§fHello?",lines:5,ui:{labelX:20,labelY:12,lineGap:12}},
   NPC: {on:"true",follow:"false",rot:-45,scale:2,pos:{x:-152,y:290}},
-  ASSET: {texture:"minecraft:textures/gui/options_background.png",rect:{x:-140,y:210,w:550,h:80,tx:0,ty:0}},
+  ASSET: {texture:"minecraft:textures/block/gray_concrete.png",rect:{x:-140,y:210,w:550,h:80,tx:0,ty:0}},
   SOUND: {open:{id:"minecraft:item.book.page_turn", vol:1, pitch:1.5},
           sentence:{ id:"minecraft:ui.button.click", vol:0.2, pitch:2.0 },
           char:{id:"minecraft:entity.experience_orb.pickup", vol:0.2, pitch:1.8}}
