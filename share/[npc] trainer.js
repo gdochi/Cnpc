@@ -191,7 +191,6 @@ function startFlow(n,p){
   var rIdx=condRound(p,n,CFG);
   var b=CFG.BATTLE||{},mode=parseInt(b.startType)||0;
   n.storeddata.put("speed",n.ai.getWalkingSpeed())
-
   n.addMark(2);svAngle(n,"save");synAngle(n,p);
   if(mode==0){ n.timers.forceStart(TID.AUTO,1,false); return; }
   if(mode==1){
