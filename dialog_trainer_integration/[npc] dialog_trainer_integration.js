@@ -7,7 +7,7 @@ var TID={DETECT:100,AUTO:300,SYN:400,DLG:500,UNLOCK_P:999},GID={DLG:39,PRED:40,F
 var trainer,w,CFG;
 
 var PLAYER=null,TELLER=null,SIM=null,DLG_NEXT=null;
-var DID={PREV:1,NEXT:2,PAGE:3,ENTITY:10,BG:11,TEXT:100};
+var DID={PREV:20,NEXT:21,PAGE:22,ENTITY:10,BG:11,TEXT:100};
 
 var DF={
   MODE:{type:"page",ui:{prevBtn:{x:328,y:185},nextBtn:{x:388,y:185},pageLabel:{x:360,y:190}},sentence:{gapTick:20},char:{gapTick:20,charsPerStep:2,typeTick:2}},
@@ -501,3 +501,4 @@ function svAngle(n,flag){
    }
    n.updateClient();
 }
+
