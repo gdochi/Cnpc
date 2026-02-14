@@ -9,15 +9,16 @@ var DF = {
   },
   TEXT: {text:"§fHello?",lines:5,ui:{labelX:20,labelY:12,lineGap:12}},
   NPC: {on:"true",follow:"false",rot:-45,scale:2,pos:{x:-152,y:290}},
-  ASSET: {texture:"minecraft:textures/block/gray_concrete.png",rect:{x:-140,y:210,w:550,h:80,tx:0,ty:0}},
+  ASSET: {texture:"minecraft:textures/gui/options_background.png",rect:{x:-140,y:210,w:550,h:80,tx:0,ty:0}},
   SOUND: {open:{id:"minecraft:item.book.page_turn", vol:1, pitch:1.5},
           sentence:{ id:"minecraft:ui.button.click", vol:0.2, pitch:2.0 },
-          char:{id:"minecraft:entity.experience_orb.pickup", vol:0.2, pitch:1.8}}
+          char:{id:"minecraft:entity.experience_orb.pickup", vol:0.2, pitch:1.8}},
+  EXTERNAL:{folderPath:"dialogues",exportPath:"dialogues"}
 };
 var SYS = {
   GUI_ID: 910,
   GUI: { W: 256, H: 256 },BASE: { x: -100, y: -30 },
-  CAT: ["MODE","TEXT","NPC","ASSET","SOUND","SIMULATION"],
+  CAT: ["MODE","TEXT","NPC","ASSET","SOUND","EXTERNAL","SIMULATION"],
   ID: {
     CAT:10,MODE:{BASE:200,PREVIEW:247,SAVE:248,END:249,SENT_GAP:220,CHAR_CPS:221,CHAR_TICK:222,CHAR_GAP:223},
     TEXT:{BASE:250,END:299},NPC:{BASE:300,END:349},ASSET:{BASE:350,END:399},
@@ -27,11 +28,17 @@ var SYS = {
       SENT_ID:407,SENT_VOL:408,SENT_PITCH:409,SENT_TEST:410,SENT_OK:411,SENT_STOP:412,
       CHAR_ID:413,CHAR_VOL:414,CHAR_PITCH:415,CHAR_TEST:416,CHAR_OK:417,CHAR_STOP:418
     },
-    SIM:{BASE:500,END:699,PAGE_PREV:500,PAGE_NEXT:501,PAGE_LABEL:502,ENTITY:510,BG_RECT:511,TEXT_BASE:520},
+    SIM:{BASE:500,END:699,PAGE_PREV:502,PAGE_NEXT:503,PAGE_LABEL:504,ENTITY:510,BG_RECT:501,TEXT_BASE:520},
+    EXTERNAL:{BASE:600,END:750,FOLDER_TF:610,FOLDER_OK:611,EXPORT_TF:620,EXPORT_OK:621,EXPORT_BTN:630,IMPORT_LIST_BASE:640,IMPORT_PREV:660,IMPORT_NEXT:661,IMPORT_OK:670,IMPORT_TF:671,SPEC_LABEL:681,
+    },
     PLAY:{BASE:899,END:1199,PAGE_PREV:900,PAGE_NEXT:901,PAGE_LABEL:902,STOP:903,STOP_YES:904,STOP_NO:905,STOP_LABEL:906,ENTITY:910,BG_RECT:911,TEXT_BASE:920}},
   LINE: {TOP: 18,BOTTOM: 250,LEFT: 72,RIGHT: 420,COLOR: 0xFFCC6A6A,THICK: 2}
 };
 var API = Java.type("noppes.npcs.api.NpcAPI").Instance();
+var File=Java.type("java.io.File");
+var Files=Java.type("java.nio.file.Files");
+var StandardCharsets=Java.type("java.nio.charset.StandardCharsets");
+
 var trainer=null;
 var G_PLAYER=null;
 function isAdmin(p){for(var i=0;i<AD.ADMINS.length;i++){if(AD.ADMINS[i] === p.getName()) return true;}return false;}
@@ -71,7 +78,8 @@ function customGuiButton(e){
   if(id>=SYS.ID.TEXT.BASE && id<SYS.ID.TEXT.END) handleText(g,id);
   if(id>=SYS.ID.NPC.BASE && id<SYS.ID.NPC.END) handleNPC(g,id);
   if(id>=SYS.ID.ASSET.BASE && id<SYS.ID.ASSET.END) handleAsset(g,id);
-  if(id >= SYS.ID.SOUND.BASE && id < SYS.ID.SOUND.END) handleSound(g,id);
+  if(id>=SYS.ID.SOUND.BASE && id<SYS.ID.SOUND.END) handleSound(g,id);
+  if(id>=SYS.ID.EXTERNAL.BASE && id<SYS.ID.EXTERNAL.END) handleExternal(g,id);
   if(id>=SYS.ID.PLAY.BASE  && id<SYS.ID.PLAY.END)  handlePlay(g,id);
 }
 function drawCat(g,idx){
@@ -82,11 +90,12 @@ function drawCat(g,idx){
   if(idx===2) drawNPC(g);
   if(idx===3) drawAsset(g);
   if(idx===4) drawSound(g);
-  if(idx===5) drawPlay(g);
+  if(idx===5) drawExternal(g);
+  if(idx===6) drawPlay(g)
 }
 function clearCat(g){
   if(SIM) stopPlay();
-  var groups=[SYS.ID.MODE,SYS.ID.TEXT,SYS.ID.NPC,SYS.ID.ASSET,SYS.ID.SOUND,SYS.ID.SIM,SYS.ID.PLAY];
+  var groups=[SYS.ID.MODE,SYS.ID.TEXT,SYS.ID.NPC,SYS.ID.ASSET,SYS.ID.SOUND,SYS.ID.SIM,SYS.ID.EXTERNAL,SYS.ID.PLAY];
   for(var i=0;i<groups.length;i++){var b=groups[i];for(var id=b.BASE;id<b.END;id++){g.removeComponent(id);}}
 }
 var MODE_LIST = ["page","sentence","char"];
@@ -159,23 +168,43 @@ function handleMode(g,id){
     save(sd,"dlg.mode",cfg);drawCat(g,0); g.update();
     return;
   }
-  if(id===SYS.ID.MODE.SAVE){
-    if(cfg.type==="sentence"){
-      var c=g.getComponent(SYS.ID.MODE.SENT_GAP);
-      if(c) cfg.sentence.gapTick = toInt(c.getText(),cfg.sentence.gapTick);
-    }
-    if(cfg.type==="char"){
-      var c1=g.getComponent(SYS.ID.MODE.CHAR_CPS);
-      var c2=g.getComponent(SYS.ID.MODE.CHAR_TICK);
-      var c3=g.getComponent(SYS.ID.MODE.CHAR_GAP);
-      if(c1) cfg.char.charsPerStep = toInt(c1.getText(),cfg.char.charsPerStep);
-      if(c2) cfg.char.typeTick     = toInt(c2.getText(),cfg.char.typeTick);
-      if(c3) cfg.char.gapTick      = toInt(c3.getText(),cfg.char.gapTick);
-    }
-    save(sd,"dlg.mode",cfg);
-    if(td.get("mode_preview")==="true") simUpdate(g);
-    return;
+if(id===SYS.ID.MODE.SAVE){
+
+  var b=SYS.ID.MODE.BASE;
+
+  var pX=g.getComponent(b+4);
+  var pY=g.getComponent(b+5);
+  if(pX) cfg.ui.prevBtn.x=toInt(pX.getText(),cfg.ui.prevBtn.x);
+  if(pY) cfg.ui.prevBtn.y=toInt(pY.getText(),cfg.ui.prevBtn.y);
+
+  var nX=g.getComponent(b+7);
+  var nY=g.getComponent(b+8);
+  if(nX) cfg.ui.nextBtn.x=toInt(nX.getText(),cfg.ui.nextBtn.x);
+  if(nY) cfg.ui.nextBtn.y=toInt(nY.getText(),cfg.ui.nextBtn.y);
+
+  var lX=g.getComponent(b+10);
+  var lY=g.getComponent(b+11);
+  if(lX) cfg.ui.pageLabel.x=toInt(lX.getText(),cfg.ui.pageLabel.x);
+  if(lY) cfg.ui.pageLabel.y=toInt(lY.getText(),cfg.ui.pageLabel.y);
+
+  if(cfg.type==="sentence"){
+    var c=g.getComponent(SYS.ID.MODE.SENT_GAP);
+    if(c) cfg.sentence.gapTick=toInt(c.getText(),cfg.sentence.gapTick);
   }
+  if(cfg.type==="char"){
+    var c1=g.getComponent(SYS.ID.MODE.CHAR_CPS);
+    var c2=g.getComponent(SYS.ID.MODE.CHAR_TICK);
+    var c3=g.getComponent(SYS.ID.MODE.CHAR_GAP);
+    if(c1) cfg.char.charsPerStep=toInt(c1.getText(),cfg.char.charsPerStep);
+    if(c2) cfg.char.typeTick=toInt(c2.getText(),cfg.char.typeTick);
+    if(c3) cfg.char.gapTick=toInt(c3.getText(),cfg.char.gapTick);
+  }
+  save(sd,"dlg.mode",cfg);
+
+  if(td.get("mode_preview")==="true") simUpdate(g);
+
+  return;
+}
   if(id===SYS.ID.MODE.PREVIEW){
     var btn=g.getComponent(id);
     var on=td.get("mode_preview")==="true";
@@ -660,4 +689,188 @@ function customGuiClosed(e){
   if (e.gui.getID()!==SYS.GUI_ID) return
   resetGuiTemp(e.player)
   e.player.timers.stop(TICK)
+}
+function drawExternal(g){
+  var sd=trainer.getStoreddata();
+  var cfg=load(sd,"dlg.external",DF.EXTERNAL);
+  var bx=SYS.BASE.x+82,by=SYS.BASE.y+28;
+  var E=SYS.ID.EXTERNAL;
+  var td=G_PLAYER.getTempdata();
+
+  if(td.get("dlg_page")==null) td.put("dlg_page","0");
+  if(td.get("dlg_selected")==null) td.put("dlg_selected","");
+  if(td.get("dlg_applied")==null) td.put("dlg_applied","");
+
+  var selected=td.get("dlg_selected")||"";
+  var applied=td.get("dlg_applied")||"";
+
+  g.addLabel(E.BASE,"§fFolder Path",bx,by,140,16);
+  g.addTextField(E.FOLDER_TF,bx,by+16,200,18).setText(cfg.folderPath||"dialogues");
+  g.addButton(E.FOLDER_OK,"§a✓",bx+204,by+16,20,18);
+
+  by+=50;
+
+  g.addLabel(E.BASE+1,"§fExport Name",bx,by,140,16);
+  g.addTextField(E.EXPORT_TF,bx,by+16,200,18).setText("dialogue_1");
+  g.addButton(E.EXPORT_BTN,"§aExport",bx+204,by+16,60,18);
+
+  by+=60;
+
+  var files=scanFiles(cfg.folderPath);
+  td.put("dlg_files",JSON.stringify(files));
+
+  var page=toInt(td.get("dlg_page"),0);
+  var start=page*5;
+
+  for(var i=0;i<5;i++){
+    var f=files[start+i];
+    if(!f) break;
+
+    var label=(f===applied?"§a> ":"§f")+f;
+    g.addButton(E.IMPORT_LIST_BASE+i,label,bx,by+i*22,200,18);
+  }
+
+  g.addButton(E.IMPORT_PREV,"<",bx+210,by,20,20);
+  g.addButton(E.IMPORT_NEXT,">",bx+235,by,20,20);
+
+  g.addTextField(E.IMPORT_TF,bx,by+5*22+6,200,18).setText(selected);
+  g.addButton(E.IMPORT_OK,"§a✓",bx+204,by+5*22+6,20,18);
+
+  g.addLabel(E.SPEC_LABEL,applied?"§eApplied: "+applied:"§7Applied: none",bx,by+5*22+30,240,16);
+}
+function scanFiles(folder){
+  try{
+    var dir=new File(folder);
+    if(!dir.exists()) dir.mkdirs();
+    var list=dir.listFiles();
+    if(!list) return [];
+    var out=[];
+    for(var i=0;i<list.length;i++){
+      var f=list[i];
+      if(f.isFile() && String(f.getName()).endsWith(".json")){out.push(String(f.getName()));}
+    }
+    return out;
+  }catch(e){return [];}
+}
+function handleExternal(g,id){
+  var sd=trainer.getStoreddata();
+  var cfg=load(sd,"dlg.external",DF.EXTERNAL);
+  var td=G_PLAYER.getTempdata();
+  var E=SYS.ID.EXTERNAL;
+
+  if(id===E.FOLDER_OK){
+    cfg.folderPath=g.getComponent(E.FOLDER_TF).getText();
+    save(sd,"dlg.external",cfg);
+    clearExternal(g);
+    drawExternal(g);g.update();
+    return;
+  }
+
+  if(id===E.EXPORT_BTN){
+    var name=g.getComponent(E.EXPORT_TF).getText();
+    if(!name) return;
+    if(!name.endsWith(".json")) name=name+".json";
+    exportDialogueFile(cfg.folderPath,name);
+    clearExternal(g);
+    drawExternal(g);g.update();
+    return;
+  }
+
+if(id>=E.IMPORT_LIST_BASE && id<E.IMPORT_LIST_BASE+5){
+  var files=JSON.parse(td.get("dlg_files")||"[]");
+  var page=toInt(td.get("dlg_page")||0,0);
+  var idx=page*5+(id-E.IMPORT_LIST_BASE);
+  var file=files[idx];
+  if(!file) return;
+
+  td.put("dlg_selected",file);
+
+  for(var i=0;i<5;i++){var b=g.getComponent(E.IMPORT_LIST_BASE+i);if(b){var f=files[page*5+i];if(f) b.setLabel(f);}}
+  var btn=g.getComponent(id);
+  if(btn) btn.setLabel("§a> "+file);
+  var tf=g.getComponent(E.IMPORT_TF);
+  if(tf) tf.setText(file);
+  var lb=g.getComponent(E.SPEC_LABEL);
+  if(lb) lb.setText("§e"+file);
+  g.update();
+  return;
+}
+ if(id===E.IMPORT_PREV){
+  var files=JSON.parse(td.get("dlg_files")||"[]");
+  var page=toInt(td.get("dlg_page")||0,0);
+  if(page>0) page--;
+  td.put("dlg_page",String(page));
+  clearExternal(g);
+  drawExternal(g);
+  g.update();
+  return;
+}
+if(id===E.IMPORT_NEXT){
+  var files=JSON.parse(td.get("dlg_files")||"[]");
+  var page=toInt(td.get("dlg_page")||0,0);
+  var maxPage=Math.max(0,Math.ceil(files.length/5)-1);
+  if(page<maxPage) page++;
+  td.put("dlg_page",String(page));
+  clearExternal(g);
+  drawExternal(g);
+  g.update();
+  return;
+}
+if(id===E.IMPORT_OK){
+
+  var tf=g.getComponent(E.IMPORT_TF);
+  var file=tf?tf.getText().trim():"";
+  if(!file) return;
+
+  if(!file.endsWith(".json")) file=file+".json";
+
+  importDialogueFile(cfg.folderPath,file);
+
+  td.put("dlg_applied",file);
+  td.put("dlg_selected","");
+
+  clearExternal(g);
+  drawExternal(g);
+  g.update();
+  return;
+}
+}
+function exportDialogueFile(folder,name){
+  try{
+    var sd=trainer.getStoreddata();
+    var data={
+      mode:JSON.parse(sd.get("dlg.mode")||"{}"),
+      text:JSON.parse(sd.get("dlg.text")||"{}"),
+      npc:JSON.parse(sd.get("dlg.npc")||"{}"),
+      asset:JSON.parse(sd.get("dlg.asset")||"{}"),
+      sound:JSON.parse(sd.get("dlg.sound")||"{}")
+    };
+    var dir=new File(folder);
+    if(!dir.exists()) dir.mkdirs();
+
+    var file=new File(dir,name);
+    Files.write(file.toPath(),JSON.stringify(data,null,2).getBytes(StandardCharsets.UTF_8));
+  }catch(e){}
+}
+function importDialogueFile(folder,name){
+  try{
+    var file=new File(folder,name);
+    if(!file.exists()) return;
+
+    var raw=new java.lang.String(Files.readAllBytes(file.toPath()),StandardCharsets.UTF_8);
+    var j=JSON.parse(raw);
+
+    var sd=trainer.getStoreddata();
+    if(j.mode) sd.put("dlg.mode",JSON.stringify(j.mode));
+    if(j.text) sd.put("dlg.text",JSON.stringify(j.text));
+    if(j.npc) sd.put("dlg.npc",JSON.stringify(j.npc));
+    if(j.asset) sd.put("dlg.asset",JSON.stringify(j.asset));
+    if(j.sound) sd.put("dlg.sound",JSON.stringify(j.sound));
+  }catch(e){}
+}
+function clearExternal(g){
+  var E=SYS.ID.EXTERNAL;
+  for(var i=E.BASE;i<E.END;i++){
+    g.removeComponent(i);
+  }
 }
