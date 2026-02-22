@@ -1,0 +1,145 @@
+DIALOGUE JSON CARTRIDGE STRUCTURE MANUAL
+
+This document explains the complete JSON cartridge structure used by the
+CustomNPC Dialogue Engine. This format is modular, file-driven, and
+designed for scalable story architecture.
+
+  ---------------------------------------------
+  1. CORE CONCEPT – WHAT IS A JSON CARTRIDGE?
+  ---------------------------------------------
+
+A Dialogue Cartridge is a standalone JSON file that contains:
+
+• Rendering configuration • Text data • UI positioning • Sound
+configuration • NPC display settings • Choice branching • Condition
+gating
+
+Each cartridge functions as a self-contained dialogue module and can be
+called dynamically using the “goto” action.
+
+Example file location: dialogues/main.json story/prologue.json
+town1/professor_intro.json
+
+The engine loads the file path directly as written. 
+
+  ---------------------------------
+  2. FULL JSON STRUCTURE OVERVIEW
+  ---------------------------------
+
+{ “base”: {}, “mode”: {}, “text”: {}, “npc”: {}, “asset”: {}, “sound”:
+{}, “choice”: {}, “con”: {} }
+
+All sections are optional except “text”. Missing sections fall back to
+engine defaults.
+
+  ----------------------------
+  3. BASE (Global UI Offset)
+  ----------------------------
+
+“base”: { “x”: 0, “y”: -30 }
+
+Offsets the entire GUI layout. Useful for repositioning dialogue panels
+without modifying internal layout.
+
+  -------------------------------------
+  4. MODE (Render Type Configuration)
+  -------------------------------------
+
+“mode”: { “type”: “char”, “ui”: { “prevBtn”: {“x”:328,“y”:185},
+“nextBtn”: {“x”:388,“y”:185}, “pageLabel”: {“x”:360,“y”:190} }, “char”:
+{ “charsPerStep”: 2, “typeTick”: 1 }, “sentence”: { “gapTick”: 20 } }
+
+Supported Types:
+
+• “char” → Character-by-character typing animation • “sentence” →
+Line-by-line reveal • “page” → Instant full-page display
+
+char settings: - charsPerStep → characters added per tick - typeTick →
+tick interval
+
+sentence settings: - gapTick → delay between lines
+
+  ----------------------------
+  5. TEXT (Dialogue Content)
+  ----------------------------
+
+“text”: { “text”: [ “§6[Professor]”, “§fWelcome to Verdantia.”, “§fYour
+journey begins here.” ], “lines”: 5, “ui”: { “labelX”: 20, “labelY”: 12,
+“lineGap”: 12 } }
+
+text.text → array of dialogue lines text.lines → number of lines per
+page ui.labelX/Y → starting position ui.lineGap → vertical spacing
+
+  -------------------------------
+  6. NPC (Model Display in GUI)
+  -------------------------------
+
+“npc”: { “on”: “true”, “follow”: “false”, “rot”: -45, “scale”: 2, “pos”:
+{“x”:-152,“y”:290} }
+
+on → show/hide NPC render follow → rotate with cursor rot → base
+rotation scale → model scale pos → position inside GUI
+
+  -----------------------------
+  7. ASSET (Background Panel)
+  -----------------------------
+
+“asset”: { “texture”: “minecraft:textures/block/gray_concrete.png”,
+“rect”: { “x”: -140, “y”: 210, “w”: 550, “h”: 80, “tx”: 0, “ty”: 0 } }
+
+texture → texture path rect.x/y → panel position rect.w/h → size
+rect.tx/ty → UV offset
+
+  ------------------------
+  8. SOUND (Audio Hooks)
+  ------------------------
+
+“sound”: { “open”:
+{“id”:“minecraft:block.note_block.pling”,“vol”:1,“pitch”:1}, “char”:
+{“id”:“minecraft:block.note_block.hat”,“vol”:0.6,“pitch”:1.5},
+“sentence”: {“id”:“minecraft:block.note_block.bell”,“vol”:1,“pitch”:1} }
+
+open → plays when dialogue opens char → plays during typing sentence →
+plays when line completes
+
+  ------------------------------
+  9. CHOICE (Branching System)
+  ------------------------------
+
+“choice”: { “list”: [ { “label”: “Yes”, “w”: 80, “h”: 20, “action”: {
+“type”: “goto”, “file”: “story/accept.json” } }, { “label”: “No”, “w”:
+80, “h”: 20, “action”: { “type”: “close” } } ] }
+
+Supported action types:
+
+• “close” • “message” • “command” • “goto”
+
+goto loads another JSON cartridge file.
+
+  --------------------------
+  10. CON (Condition Gate)
+  --------------------------
+
+“con”: { “mode”: 0, “rules”: [
+{“type”:“tag”,“op”:“has”,“key”:“starter_received”} ] }
+
+mode: 0 → AND (all rules required) 1 → OR (at least one rule)
+
+Supported types: item / stored / tag / faction / adv
+
+  -------------------------------------
+  11. CARTRIDGE CHAINING ARCHITECTURE
+  -------------------------------------
+
+A dialogue tree is built by linking cartridges using:
+
+action.type = “goto”
+
+This allows:
+
+• Story branching • Multi-step quest conversations • Conditional
+redirection • Modular narrative design
+
+Each file is independent and reusable.
+
+End 
