@@ -253,9 +253,10 @@ function handleAction(p,n,act){
 function customGuiClosed(e){cleanup(e.player,e.npc);}
 function cleanup(p,n){
   if(!p||!n) return;
+  var st=n.tempdata.get(kState(p));
+  if(st){st.typing=false;n.tempdata.put(kState(p),st);}
   n.tempdata.remove(kData(p));
   n.tempdata.remove(kState(p));
-  n.timers.clear()
 }
 function cleanupByUUID(n,uuid){
   n.tempdata.remove("dlg_data_"+uuid);
@@ -358,3 +359,4 @@ function condOne(p,type,op,key,val){
   return false;
 
 }
+
