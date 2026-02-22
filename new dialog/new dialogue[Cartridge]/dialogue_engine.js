@@ -255,6 +255,7 @@ function cleanup(p,n){
   if(!p||!n) return;
   n.tempdata.remove(kData(p));
   n.tempdata.remove(kState(p));
+  n.timers.clear()
 }
 function cleanupByUUID(n,uuid){
   n.tempdata.remove("dlg_data_"+uuid);
@@ -355,4 +356,5 @@ function condOne(p,type,op,key,val){
     return false;
   }
   return false;
+
 }
