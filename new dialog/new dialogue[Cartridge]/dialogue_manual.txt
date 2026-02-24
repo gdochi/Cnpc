@@ -127,8 +127,81 @@ mode: 0 → AND (all rules required) 1 → OR (at least one rule)
 
 Supported types: item / stored / tag / faction / adv
 
+ -----------------------------------------
+  11. REPLACEMENT SYSTEM (Dynamic Tokens)
+  -----------------------------------------
+
+The Dialogue Engine supports dynamic placeholder replacement inside
+dialogue text.
+
+This system allows special tokens to be written directly inside text
+lines, which are automatically resolved into live game values when
+rendered.
+
+11.1 TOKEN FORMAT
+
+All replacement tokens must follow this structure:
+
+@category@key@ @category@key@subkey@ @category@key|fallback@
+
+Tokens must begin and end with “@”.
+
+Optional fallback values may be provided using the pipe symbol:
+
+@player@store@title|You@
+
+If the value does not exist or resolves to null/empty, the fallback
+value will be used instead.
+
+11.2 CURRENTLY SUPPORTED TOKENS
+
+Player Name:
+
+@player@name@
+
+Returns the player’s current in-game name.
+
+Stored Data:
+
+@player@store@key@ @player@store@key|default@
+
+Reads a value from the player’s storeddata. If the key does not exist,
+returns the fallback or “0”.
+
+Inventory Count:
+
+@player@inv@minecraft:emerald@ @player@inv@minecraft:emerald|0@
+
+Returns the total count of the specified item in the player’s inventory.
+
+11.3 EXAMPLE USAGE
+
+Example dialogue:
+
+“§fHello @player@name@.” “§fYou currently have
+@player@inv@minecraft:emerald|0@ emeralds.” “§fYour title is
+@player@store@title|Adventurer@.”
+
+Rendered result (example):
+
+Hello Grand. You currently have 12 emeralds. Your title is Adventurer.
+
+11.4 DESIGN PHILOSOPHY
+
+The replacement system is designed to:
+
+• Keep dialogue text readable • Allow live data injection without
+scripting • Support fallback safety • Remain modular and expandable
+
+Additional token handlers (such as scoreboard, faction reputation, or
+mod-specific systems like custom currency) can be added by extending the
+replacement function inside the engine.
+
+The base system remains mod-agnostic. Extensions may hook into the same
+token architecture without altering existing cartridges.
+
   -------------------------------------
-  11. CARTRIDGE CHAINING ARCHITECTURE
+  12. CARTRIDGE CHAINING ARCHITECTURE
   -------------------------------------
 
 A dialogue tree is built by linking cartridges using:
