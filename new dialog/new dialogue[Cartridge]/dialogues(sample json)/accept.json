@@ -17,7 +17,7 @@
     "text":[
       "§6[Village Chief]",
       "§aExcellent!",
-      "§fTake these emeralds as preparation.",
+      "§aEmerald §f@player@inv@minecraft:emerald@/120 Take these emeralds as preparation.",
       "§fReturn once the forest is safe."
     ]
   },
