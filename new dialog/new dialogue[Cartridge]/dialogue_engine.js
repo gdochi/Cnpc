@@ -1,6 +1,4 @@
-///////////////////////////////////////////
-var DEFAULT_FILE="dialogues/main.json";//// start dialogues file
-///////////////////////////////////////////
+var DEFAULT_FILE="dialogues/main.json";
 
 var API=Java.type("noppes.npcs.api.NpcAPI").Instance();
 var JsonParser=Java.type("com.google.gson.JsonParser");
@@ -9,6 +7,7 @@ var Paths=Java.type("java.nio.file.Paths");
 var StandardCharsets=Java.type("java.nio.charset.StandardCharsets");
 var GUI_ID=950,TIMER_ID=951;
 var teller
+
 function init(e){e.npc.timers.forceStart(TIMER_ID,1,true);}
 
 function interact(e){
@@ -27,6 +26,7 @@ function getStartFile(n){
 }
 function kData(p){return "dlg_data_"+p.getUUID();}
 function kState(p){return "dlg_state_"+p.getUUID();}
+
 function openDialogue(p,n,data,file){
   n.tempdata.put(kData(p),data);
   n.tempdata.put(kState(p),makeState(data,file));
@@ -58,8 +58,8 @@ function fullPage(p,n){
   var dlg=getTextList(data),out=[],base=st.page*st.maxLines;
   for(var i=0;i<st.maxLines;i++){
     var l=dlg[base+i];
-    if(l==null) break;
-    out.push(""+l);
+    if(l==null) break;  
+    out.push(apHolder(p,n,""+l));
   }
   st.lines=out;st.typing=false;
   n.tempdata.put(kState(p),st);
@@ -91,7 +91,7 @@ function stepTyping(p,n,st){
   var idx=st.page*st.maxLines+st.line;
   var text=dlg[idx];
   if(text==null){st.typing=false;n.tempdata.put(kState(p),st);return;}
-  text=""+text;
+  text=apHolder(p,n,""+text);
   var cur=""+(st.lines[st.line]||"");
   var cps=st.charsPerStep;
   for(var i=0;i<cps&&st.char<text.length;i++){
@@ -116,7 +116,6 @@ function stepTyping(p,n,st){
   n.tempdata.put(kState(p),st);
   updateGui(p,n);
 }
-
 function getPlayerByUUID(n,uuid){
   var w=n.getWorld();
   var pls=w.getAllPlayers();
@@ -141,7 +140,7 @@ function drawGui(p,n,g){
   var st=n.tempdata.get(kState(p)),data=n.tempdata.get(kData(p));
   if(!st||!data) return;
 
-  var base=(data.base||{}),mode=(data.mode||{}),text=(data.text||{}),npc=(data.npc||{}),asset=(data.asset||{}),sound=(data.sound||{}),choice=(data.choice||{});
+  var base=(data.base||{}),mode=(data.mode||{}),text=(data.text||{}),npc=(data.npc||{}),asset=(data.asset||{});
   var bx=parseInt(base.x||0,10)||0,by=parseInt(base.y||0,10)||0;
 
   var rect=(asset.rect||{x:-140,y:210,w:550,h:80,tx:0,ty:0});
@@ -157,6 +156,7 @@ function drawGui(p,n,g){
     ed.setScale(parseFloat(npc.scale||1)||1);
     ed.setFollowingCursor((""+(npc.follow||"false")==="true"));
   }
+
   var ui=(text.ui||{labelX:20,labelY:12,lineGap:12});
   for(var i=0;i<st.lines.length;i++) g.addLabel(100+i,""+st.lines[i],rx+(parseInt(ui.labelX||0,10)||0),ry+(parseInt(ui.labelY||0,10)||0)+i*(parseInt(ui.lineGap||0,10)||0),256,12);
 
@@ -168,6 +168,7 @@ function drawGui(p,n,g){
   g.addLabel(3,"§f"+(st.page+1)+" / "+total,(parseInt(pl.x||0,10)||0)+bx,(parseInt(pl.y||0,10)||0)+by,80,16);
   g.addButton(4,">",(parseInt(next.x||0,10)||0)+bx,(parseInt(next.y||0,10)||0)+by,20,20);
 }
+
 function createChoices(p,n){
   var st=n.tempdata.get(kState(p)),data=n.tempdata.get(kData(p));
   if(!st||!data) return;
@@ -194,6 +195,7 @@ function createChoices(p,n){
   }
   g.update();
 }
+
 function clearGui(g){
   g.removeComponent(1);g.removeComponent(10);
   g.removeComponent(2);g.removeComponent(3);g.removeComponent(4);
@@ -206,7 +208,6 @@ function customGuiButton(e){
   if(e.buttonId===2){prevPage(p,n);return;}
   if(e.buttonId>=500){choiceClick(p,n,e.buttonId-500);return;}
 }
-
 function nextPage(p,n){
   var st=n.tempdata.get(kState(p)),data=n.tempdata.get(kData(p));
   if(!st||!data) return;
@@ -223,12 +224,12 @@ function prevPage(p,n){
   if(st.page<=0) return;
   startPage(p,n,st.page-1);
 }
-
 function choiceClick(p,n,idx){
   var data=n.tempdata.get(kData(p));
   if(!data||!data.choice||!data.choice.list||!data.choice.list[idx]) return;
   handleAction(p,n,data.choice.list[idx].action);
 }
+
 function handleAction(p,n,act){
   if(!act||!act.type) return;
   if(act.type==="close"){p.closeGui();cleanup(p,n);return;}
@@ -258,14 +259,8 @@ function cleanup(p,n){
   n.tempdata.remove(kData(p));
   n.tempdata.remove(kState(p));
 }
-function cleanupByUUID(n,uuid){
-  n.tempdata.remove("dlg_data_"+uuid);
-  n.tempdata.remove("dlg_state_"+uuid);
-}
-function getTextList(data){
-  if(data&&data.text&&data.text.text&&data.text.text.length) return data.text.text;
-  return [];
-}
+function cleanupByUUID(n,uuid){n.tempdata.remove("dlg_data_"+uuid);n.tempdata.remove("dlg_state_"+uuid);}
+function getTextList(data){if(data&&data.text&&data.text.text&&data.text.text.length) return data.text.text;return [];}
 function getSound(data,name){
   if(!data||!data.sound||!data.sound[name]||!data.sound[name].id) return null;
   return data.sound[name];
@@ -357,6 +352,24 @@ function condOne(p,type,op,key,val){
     return false;
   }
   return false;
-
 }
-
+function apHolder(p,n,str){
+  if(!str) return "";
+  var w=p.getWorld(),inv=p.getInventory(),sd=p.getStoreddata();
+  str=str.replace(/@player@name@/g,""+p.getName());
+  str=str.replace(/@player@store@([a-zA-Z0-9_:\-]+)(\|([^@]+))?@/g,function(_,key,__ ,def){
+    if(!sd) return def!=null?""+def:"0";
+    var v=sd.get(key);
+    if(v==null||v==="") return def!=null?""+def:"0";
+    return ""+v;
+  });
+  str=str.replace(/@player@inv@([a-zA-Z0-9_:\-]+)(\|([^@]+))?@/g,function(_,itemId,__ ,def){
+    if(!itemId||!w||!inv) return def!=null?""+def:"0";
+    var item=w.createItem(itemId,1);
+    if(!item) return def!=null?""+def:"0";
+    var count=inv.count(item,true,true);
+    if(count===0&&def!=null) return ""+def;
+    return ""+count;
+  });
+  return str;
+}
