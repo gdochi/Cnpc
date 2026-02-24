@@ -16,7 +16,7 @@
     "ui":{"labelX":20,"labelY":12,"lineGap":12},
     "text":[
       "§6[Village Chief]",
-      "§fAdventurer...",
+      "§f@player@name@...",
       "§fThe eastern forest is in danger.",
       "§fWill you help us?"
     ]
