@@ -1,0 +1,81 @@
+Combat AI Script - Configuration Manual
+------------------------------------------------------------------------
+
+SPEC Object
+
+This is the main configuration block.
+
+1)  Ranged Weapon Settings
+
+range:{ cat:“tacz:modern_kinetic_gun”, model:“tacz:glock_17”,
+bullet:“minecraft:stone_button” }
+
+cat : Base gun item ID (TACZ gun item) 
+model : GunId stored in NBT(actual gun model used) 
+bullet : Projectile item used for shooting
+
+2)  Fire Settings
+
+fire:{ delay:5, accuracy:[10,90], count:1, damage:3 }
+
+delay : Ticks between shots 
+accuracy : Random accuracy range (min, max)
+count : Number of bullets per shot 
+damage : Ranged damage strength
+
+3)  Melee Settings
+
+melee:{ model:“minecraft:wooden_sword”, damage:1 }
+model : Melee weapon item ID 
+damage : Melee attack damage
+
+4)  Grenade Settings
+
+grenade:{ fuse:100, power:1.1, angle:65, range:[5,20], search:5,
+hpratio:0.5, cooldown:200, throwableId:“lrtactical:m67”,
+itemId:“lrtactical:throwable”, count:1 }
+
+Core Throw Behavior
+
+fuse : Time before explosion (ticks) 
+power : Base throw power 
+angle : Throw arc angle (degrees)
+
+Distance Control
+
+range[0] : Minimum throw distance 
+range[1] : Maximum throw distance
+
+Tactical Logic
+
+search : Radius to scan for extra entities 
+hpratio : Health threshold
+(0.5 = 50%) cooldown : Cooldown between throws (ticks)
+
+Grenade is thrown if: - Player disappears after being seen - Other
+entities exist near target - NPC HP <= hpratio - Cooldown has passed
+
+Grenade Type
+
+throwableId : Type of grenade (m67 / smoke / flash) 
+itemId : Base
+throwable item ID 
+
+------------------------------------------------------------------------
+
+DIST Object
+
+var DIST={range:50,melee:3,yLimit:2}
+
+range : Maximum combat distance 
+melee : Melee range threshold 
+yLimit : Y-axis difference threshold (forces ranged mode)
+
+------------------------------------------------------------------------
+
+Speed Settings
+
+speed:{ default:3, close:3, range:0 }
+
+default : Default walking speed close : Walking speed in melee mode
+range : Walking speed in ranged mode (0 = stationary)
