@@ -236,9 +236,9 @@ function handleAction(p,n,act){
   if(act.type==="message"){p.message(""+(act.value||""));p.closeGui();cleanup(p,n);return;}
   if(act.type==="command"){
     var cmd=(""+(act.value||"")).replace(/@player/g,p.getName()).replace(/@npc@name/g,n.getDisplay().getName()).replace(/@npc/g,n.getUUID());
-    n.executeCommand(cmd);
-    p.closeGui();
     cleanup(p,n);
+    n.executeCommand(cmd);
+    var g=p.getCustomGui(); if(g&&g.getID()==GUI_ID)g.close()
     return;
   }
   if(act.type==="goto"){
@@ -373,3 +373,4 @@ function apHolder(p,n,str){
   });
   return str;
 }
+
