@@ -29,7 +29,7 @@
   ],
 
   "images": [
-    { "texture": "minecraft:textures/item/emerald.png", "x": 30, "y": 25, "w": 32, "h": 32, "tx": 0, "ty": 0 }
+    { "texture": "minecraft:textures/painting/skeleton.png", "x": 30, "y": 25, "w": 256, "h": 256, "tx": 0, "ty": 0 }
   ],
 
   "itemRenders": [
