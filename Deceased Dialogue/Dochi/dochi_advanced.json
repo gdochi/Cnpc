@@ -1,0 +1,20 @@
+{
+  "text": [
+    "npc.deceasedcraft.blake.quest.killordure.3",
+    "npc.deceasedcraft.blake.quest.killordure.4"
+  ],
+  "choice": [
+    {
+      "label": "npc.deceasedcraft.blake.quest.killordure.answer.3",
+      "actions": [
+        { "command": "give @player minecraft:emerald 5" }
+      ]
+    },
+    {
+      "label": "npc.deceasedcraft.blake.quest.killordure.answer.4",
+      "actions": [
+        { "close": true }
+      ]
+    }
+  ]
+}

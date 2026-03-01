@@ -1,0 +1,14 @@
+{
+  "routes": [],
+  "text": [
+    "npc.deceasedcraft.blake.quest.killrod.answer.1"
+  ],
+  "choice": [
+    {
+      "label": "npc.deceasedcraft.blake.quest.killrod.answer.1",
+      "actions": [
+        { "close": true }
+      ]
+    }
+  ]
+}

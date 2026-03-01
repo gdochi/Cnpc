@@ -1,0 +1,20 @@
+{
+  "text": [
+    "npc.deceasedcraft.blake.quest.killordure.1",
+    "npc.deceasedcraft.blake.quest.killordure.2"
+  ],
+  "choice": [
+    {
+      "label": "npc.deceasedcraft.blake.quest.killordure.answer.1",
+      "actions": [
+        { "goto": "dochi_inprogress" }
+      ]
+    },
+    {
+      "label": "npc.deceasedcraft.blake.dialogue.response.chat",
+      "actions": [
+        { "close": true }
+      ]
+    }
+  ]
+}
