@@ -4,10 +4,10 @@
       "cond": {
         "mode": "and",
         "list": [
-            {"ftb": {"quest": "0CB0789C39C69394","type": "completed","value": true}},
-            {"ftb": {"quest": "0CB0789C39C69394","task": 1,"type": "completed","value": true}},
-            {"advancement": {"id": "minecraft:adventure/kill_a_mob","type": "has","value": true}},
-            {"stored": {"key": "dochi_stage","type": "compare","operator": ">=","value": 3}}
+          {"ftb": {"quest": "0CB0789C39C69394","type": "completed","value": true}},
+          {"ftb": {"quest": "0CB0789C39C69394","task": 1,"type": "completed","value": true}},
+          {"advancement": {"id": "minecraft:adventure/kill_a_mob","type": "has","value": true}},
+          {"stored": {"key": "dochi_stage","type": "compare","operator": ">=","value": 3}}
         ]
       },
       "goto": "dochi_advanced"
@@ -23,35 +23,45 @@
       "goto": "dochi_inprogress"
     }
   ],
-  
-  "text": ["npc.deceasedcraft.blake.dialogue.response.chat"],
 
- "choice": [
+  "text": [
+    "npc.deceasedcraft.blake.dialogue.response.chat"
+  ],
+
+  "images": [
+    { "texture": "minecraft:textures/item/emerald.png", "x": 30, "y": 25, "w": 32, "h": 32, "tx": 0, "ty": 0 }
+  ],
+
+  "itemRenders": [
+    { "id": "minecraft:emerald", "count": 5, "x": 80, "y": 25, "scale": 1.2 }
+  ],
+
+  "choice": [
     {
       "label": "npc.deceasedcraft.blake.dialogue.response.chat",
       "actions": [
-        {"goto": "dochi_chat_1"}
+        { "goto": "dochi_chat_1" }
       ]
     },
     {
       "label": "npc.deceasedcraft.blake.dialogue.response.trade",
       "actions": [
-        {"role": true}
+        { "role": true }
       ]
     },
     {
       "label": "npc.deceasedcraft.blake.quest.killordure.answer.1",
       "actions": [
-        {"advancement": {"id": "deceasedcraft:npcs/dochi","grant": true}},
-        {"store": {"key": "dochi_stage","value": 4}},
-        {"command": "give @player minecraft:emerald 5"},
-        {"goto": "dochi_chat_1"}
+        { "advancement": { "id": "deceasedcraft:npcs/dochi", "grant": true } },
+        { "store": { "key": "dochi_stage", "value": 4 } },
+        { "command": "give @player minecraft:emerald 5" },
+        { "goto": "dochi_chat_1" }
       ]
     },
     {
       "label": "npc.deceasedcraft.blake.quest.killrod.answer.1",
       "actions": [
-        {"close": true}
+        { "close": true }
       ]
     }
   ]
