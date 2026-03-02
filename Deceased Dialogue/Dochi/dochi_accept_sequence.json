@@ -1,0 +1,17 @@
+{
+  "routes": [],
+  "text": [
+    "npc.deceasedcraft.blake.quest.killordure.1"
+  ],
+  "choice": [
+    {
+      "label": "npc.deceasedcraft.blake.quest.killordure.answer.1",
+      "actions": [
+        { "advancement": { "id": "deceasedcraft:npcs/dochi", "grant": true } },
+        { "store": { "key": "dochi_stage", "value": 4 } },
+        { "command": "give @player minecraft:emerald 5" },
+        { "goto": "dochi_chat_1" }
+      ]
+    }
+  ]
+}
