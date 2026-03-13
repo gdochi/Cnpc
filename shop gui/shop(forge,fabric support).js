@@ -47,7 +47,7 @@ g.addEntityDisplay(ID.ENTITY,BASE.X+160,BASE.Y+210,e.npc).setScale(1.6);
 setDesc(g,"§fWelcome.");
 
 g.addItemSlot(BASE.X+20,BASE.Y+120);
-g.addTexturedButton(500,"",BASE.X+19,BASE.Y+119,20,20,"customnpcs:textures/gui/invisibe.png");
+g.addTexturedButton(500,"",BASE.X+19,BASE.Y+119,20,20,"customnpcs:textures/gui/invisible.png");
 
 g.addLabel(ID.SELECT_STOCK,"",BASE.X+20,BASE.Y+140,120,16);
 
@@ -255,4 +255,5 @@ renderPage(g,w);
 g.update();
 }}
 function customGuiClosed(e){if(e.gui.getID()!==GUI_ID) return;STATE.sel=-1;STATE.qty=1;STATE.page=0;}
+
 function customGuiSlotClicked(e){e.setCanceled(true);}
